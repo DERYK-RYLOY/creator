@@ -1,0 +1,24 @@
+# Binaries and build output
+/bin/
+*.exe
+*.exe~
+*.test
+/creator
+/tools/pdfgen/pdfgen
+
+# Local state and runtime data — never commit credentials or DBs
+.creator/
+creator.db
+*.db
+*.sqlite
+*.log
+/state/
+/out/
+/checkpoints/
+
+# Editor/OS noise
+*~
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
