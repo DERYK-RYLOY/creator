@@ -338,6 +338,8 @@ Go 1.27+, no CGO. The suite is plain `go test`.
   jobs, delegates, checkpoints, API keys) — never commit it or publish it.
 - Build artifacts (`*.exe`, `*.test`, `bin/`, `tools/pdfgen/pdfgen`) are
   gitignored; the distribution binary is built on demand.
+- `creator.db` is chmod 0600 on first open; on Windows the mode is not a
+  real owner-only ACL (documented limitation, not a regression).
 
 ```bash
 go test ./...
