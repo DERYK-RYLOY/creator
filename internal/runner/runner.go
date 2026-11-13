@@ -55,21 +55,21 @@ type Spec struct {
 
 // Snapshot is a race-free view of a job.
 type Snapshot struct {
-	ID        string        `json:"id"`
-	Command   string        `json:"command"`
-	Dir       string        `json:"dir"`
-	Shell     string        `json:"shell"`
-	Status    Status        `json:"status"`
-	Started   time.Time     `json:"started"`
-	Ended     time.Time     `json:"ended,omitempty"`
+	ID      string    `json:"id"`
+	Command string    `json:"command"`
+	Dir     string    `json:"dir"`
+	Shell   string    `json:"shell"`
+	Status  Status    `json:"status"`
+	Started time.Time `json:"started"`
+	Ended   time.Time `json:"ended,omitempty"`
 	// Duration is in-process only (nanoseconds internally, arithmetic-friendly).
 	// JSON consumers see DurationMs under duration_ms; previously Duration was
 	// marshaled raw under duration_ms, which exposed nanoseconds as "ms".
-	Duration  time.Duration `json:"-"`
-	DurationMs int64        `json:"duration_ms"`
-	ExitCode  int           `json:"exit_code"`
-	Bytes     int64         `json:"bytes"`
-	Truncated bool          `json:"truncated"`
+	Duration   time.Duration `json:"-"`
+	DurationMs int64         `json:"duration_ms"`
+	ExitCode   int           `json:"exit_code"`
+	Bytes      int64         `json:"bytes"`
+	Truncated  bool          `json:"truncated"`
 }
 
 // Job is a running or finished command.
@@ -185,11 +185,11 @@ func (j *Job) Wait(ctx context.Context) error {
 
 // Manager owns the jobs of one Creator process.
 type Manager struct {
-	store    *store.Store
-	mu       sync.Mutex
-	jobs     map[string]*Job
-	maxBytes int64
-	healthMu sync.Mutex
+	store     *store.Store
+	mu        sync.Mutex
+	jobs      map[string]*Job
+	maxBytes  int64
+	healthMu  sync.Mutex
 	healthErr error // last persistence or kill failure; surfaced via Health()
 }
 

@@ -253,15 +253,15 @@ func (c *Client) openaiStreamChat(ctx context.Context, req Request, body *oaRequ
 // is local so a retry starts clean.
 func (c *Client) consumeOpenAIStream(ctx context.Context, req Request, body *oaRequest, stream io.Reader, delivered *bool) (Response, error) {
 	var (
-		text       strings.Builder
-		reasoning  strings.Builder
-		calls      = map[int]*ToolCall{}
-		callOrder  []int
+		text        strings.Builder
+		reasoning   strings.Builder
+		calls       = map[int]*ToolCall{}
+		callOrder   []int
 		lastToolIdx int
-		stopReason string
-		usage      Usage
-		haveUsage  bool
-		onDelta    = func(d Delta) {
+		stopReason  string
+		usage       Usage
+		haveUsage   bool
+		onDelta     = func(d Delta) {
 			*delivered = true
 			req.OnDelta(d)
 		}

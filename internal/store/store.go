@@ -1,4 +1,4 @@
-﻿// Package store persists sessions, raw job output and file checkpoints.
+// Package store persists sessions, raw job output and file checkpoints.
 //
 // Metadata lives in a bbolt database; bulky payloads (job output, checkpoint
 // bodies) live beside it as files so the database stays small and mmap friendly.
@@ -52,10 +52,10 @@ func msgKey(sessionID string, seq uint64) []byte {
 
 // Store is the on-disk state of a Creator installation.
 type Store struct {
-	db     *bolt.DB
-	dir    string
-	errMu  sync.Mutex
-	dbErr  error
+	db    *bolt.DB
+	dir   string
+	errMu sync.Mutex
+	dbErr error
 }
 
 // Session is a resumable conversation.

@@ -39,12 +39,12 @@ func TestClassifyTiers(t *testing.T) {
 		{"git status", TierSafe},
 		{"git diff --stat", TierSafe},
 		{"go test ./...", TierSafe},
-		{"rm -rf */build", TierCritical},  // glob target: unverifiable recursion
-		{"rm -rf ./../*", TierCritical},   // parent glob
+		{"rm -rf */build", TierCritical}, // glob target: unverifiable recursion
+		{"rm -rf ./../*", TierCritical},  // parent glob
 		{"base64 -d payload.b64", TierModerate},
 		{"base64 --decode payload.b64", TierModerate},
 		{"base64 payload.b64", TierModerate}, // unknown-command caution, not a decode
-		{"echo base64 -d", TierSafe},        // substring scan must not fire on echo
+		{"echo base64 -d", TierSafe},         // substring scan must not fire on echo
 		{"git config user.email me@example.com", TierModerate},
 		{"git config --list", TierSafe},
 		{"git config --get user.email", TierSafe},

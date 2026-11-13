@@ -688,8 +688,8 @@ func pruneStale(st *store.Store, verbose bool) {
 // a secret past any static filter, but the common shapes must never land in
 // a log.
 var sensitiveArgPatterns = []struct {
-	re     *regexp.Regexp
-	mask   string
+	re   *regexp.Regexp
+	mask string
 }{
 	{regexp.MustCompile(`(?i)(authorization:\s*(bearer|basic|token)\s+)[^\s"']+`), "${1}[REDACTED]"},
 	{regexp.MustCompile(`(?i)(bearer\s+)[^\s"']+`), "${1}[REDACTED]"},

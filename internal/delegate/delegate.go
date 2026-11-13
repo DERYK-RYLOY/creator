@@ -110,18 +110,18 @@ type TaskCloser interface {
 type Manager struct {
 	opts Options
 
-	mu      sync.Mutex
-	reg     *tools.Registry // captured on first Attach
-	records map[string]*Record
-	done    map[string]chan struct{}
-	live    map[string]context.CancelFunc // cancels for running delegates
-	spawnN  map[string]int                // root session -> lifetime spawns
-	running int
-	queued  int
-	slots   chan struct{} // concurrency semaphore
+	mu         sync.Mutex
+	reg        *tools.Registry // captured on first Attach
+	records    map[string]*Record
+	done       map[string]chan struct{}
+	live       map[string]context.CancelFunc // cancels for running delegates
+	spawnN     map[string]int                // root session -> lifetime spawns
+	running    int
+	queued     int
+	slots      chan struct{} // concurrency semaphore
 	journalMu  sync.Mutex
 	journalErr error // last journal (SaveDelegate) failure
-	subs    map[chan store.DelegateEvent]struct{}
+	subs       map[chan store.DelegateEvent]struct{}
 }
 
 // Record is the live view of one delegate.
@@ -311,14 +311,14 @@ func (m *Manager) Spawn(ctx context.Context, parentID string, spec Spec) (*Recor
 		m.spawnN[rootID]++
 	}
 	rec := &Record{DelegateRecord: store.DelegateRecord{
-		ID:        id.New("d"),
-		Parent:    parentID,
-		Name:      orDefaultStr(strings.TrimSpace(spec.Name), "delegate"),
-		Task:      firstLine(spec.Task, 160),
-		Status:    "queued",
-		Depth:     spec.Depth,
-		Created:   time.Now(),
-		OwnerPID:  os.Getpid(), // this manager owns the delegate it spawned
+		ID:       id.New("d"),
+		Parent:   parentID,
+		Name:     orDefaultStr(strings.TrimSpace(spec.Name), "delegate"),
+		Task:     firstLine(spec.Task, 160),
+		Status:   "queued",
+		Depth:    spec.Depth,
+		Created:  time.Now(),
+		OwnerPID: os.Getpid(), // this manager owns the delegate it spawned
 	}}
 	m.records[rec.ID] = rec
 	m.done[rec.ID] = make(chan struct{})

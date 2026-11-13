@@ -1,4 +1,4 @@
-﻿// Package reduce turns arbitrarily large command output into a token-budgeted
+// Package reduce turns arbitrarily large command output into a token-budgeted
 // digest addressed by a stable handle.
 //
 // The contract that makes Creator different from a shell wrapper: a tool never
