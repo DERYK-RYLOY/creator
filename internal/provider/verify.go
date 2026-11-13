@@ -60,7 +60,15 @@ func CheckKeyFormat(d Descriptor, key string) error {
 		return errors.New("the key is empty — paste it exactly as copied from the provider")
 	}
 	if strings.ContainsAny(k, " \t\r\n") {
-		return errors.New("the key contains whitespace — paste it exactly as copied, no spaces")
+		return errors.New("the key contains whitespace - paste it exactly as copied, no spaces")
+	}
+	// Reject anything that isn't a printable ASCII token: invisible or
+	// non-ASCII bytes copied along with the key would blow up inside the
+	// HTTP layer with a meaningless error instead of pointing at the key.
+	for _, r := range k {
+		if r < 0x21 || r > 0x7e {
+			return fmt.Errorf("the key contains invisible or non-ASCII characters (code point %d) - it was likely copied with a BOM or a stray character; re-paste it exactly", r)
+		}
 	}
 	if len(k) < 8 {
 		return fmt.Errorf("only %d characters — that is too short to be a %s key", len(k), d.Name)
@@ -326,6 +334,9 @@ func (r *VerifyResult) record(name string, ok bool, detail string) {
 // OpenAI-compatible servers do not implement /models).
 func fetchModels(ctx context.Context, d Descriptor, base, key string, step func(string, bool, string)) ([]ModelInfo, bool, error) {
 	url := base + "/models"
+	if d.ModelsURL != "" {
+		url = d.ModelsURL
+	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, false, err
@@ -362,6 +373,41 @@ func fetchModels(ctx context.Context, d Descriptor, base, key string, step func(
 		return nil, false, fmt.Errorf("%s refused the model list (%d): %s", d.Name, resp.StatusCode, snippet(string(body)))
 	}
 
+	// Some providers serve a bare array of raw model objects instead of the
+	// OpenAI {"data":[...]} wrapper (e.g. Pollinations' anonymous catalog).
+	trimmed := bytes.TrimSpace(body)
+	if len(trimmed) > 0 && trimmed[0] == '[' {
+		var arr []struct {
+			Name  string `json:"name"`
+			ID    string `json:"id"`
+			Tier  string `json:"tier"`
+			Note  string `json:"description"`
+		}
+		if err := json.Unmarshal(trimmed, &arr); err != nil {
+			return nil, false, fmt.Errorf("%s returned an unreadable model list: %v (body: %s)", d.Name, err, snippet(string(body)))
+		}
+		out := make([]ModelInfo, 0, len(arr))
+		for _, m := range arr {
+			id := strings.TrimSpace(m.ID)
+			if id == "" {
+				id = strings.TrimSpace(m.Name)
+			}
+			if id == "" {
+				continue
+			}
+			tier := strings.ToLower(strings.TrimSpace(m.Tier))
+			free := tier == "anonymous" || strings.Contains(tier, "free") || strings.HasSuffix(id, ":free")
+			out = append(out, ModelInfo{ID: id, Free: free, Note: snippet(m.Note)})
+		}
+		sort.SliceStable(out, func(i, j int) bool {
+			if out[i].Free != out[j].Free {
+				return out[i].Free
+			}
+			return out[i].ID < out[j].ID
+		})
+		step("models", true, fmt.Sprintf("%d models listed", len(out)))
+		return out, true, nil
+	}
 	var payload struct {
 		Data []struct {
 			ID       string            `json:"id"`
@@ -370,7 +416,7 @@ func fetchModels(ctx context.Context, d Descriptor, base, key string, step func(
 		} `json:"data"`
 	}
 	if err := json.Unmarshal(body, &payload); err != nil {
-		return nil, false, fmt.Errorf("%s returned an unreadable model list: %v", d.Name, err)
+		return nil, false, fmt.Errorf("%s returned an unreadable model list: %v (body: %s)", d.Name, err, snippet(string(body)))
 	}
 	out := make([]ModelInfo, 0, len(payload.Data))
 	for _, m := range payload.Data {

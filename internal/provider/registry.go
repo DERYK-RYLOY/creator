@@ -23,6 +23,11 @@ type Descriptor struct {
 	Protocol  Protocol
 	BaseURL   string
 	APIKeyEnv []string
+	// ModelsURL, when set, is the absolute URL of the model catalog. Some
+	// providers serve their catalog somewhere other than baseURL + "/models"
+	// (e.g. Pollinations serves it at the origin root); the chat probe still
+	// goes through baseURL + "/chat/completions".
+	ModelsURL string
 	Models    []string
 	Local     bool
 	// StreamUsage marks backends that accept stream_options.include_usage on
@@ -158,10 +163,12 @@ var registry = []Descriptor{
 	},
 	{
 		Slug: "pollinations", Name: "Pollinations Free", Protocol: ProtocolOpenAI,
-		BaseURL: "https://text.pollinations.ai/v1", Local: true,
-		Models: []string{"openai-fast"},
-		Docs:   "https://pollinations.ai",
-		Free:   "anonymous OpenAI-compatible access, 1 reply every ~45s per IP",
+		BaseURL:   "https://text.pollinations.ai/v1",
+		ModelsURL: "https://text.pollinations.ai/models", // catalog lives at the origin root, not under /v1
+		Local:     true,
+		Models:    []string{"openai-fast"},
+		Docs:      "https://pollinations.ai",
+		Free:      "anonymous OpenAI-compatible access, 1 reply every ~45s per IP",
 	},
 	{
 		Slug: "pollinations-pollen", Name: "Pollinations Pollen", Protocol: ProtocolOpenAI,

@@ -149,3 +149,53 @@ func TestVerifyFiltersCatalogToAllowlist(t *testing.T) {
 		t.Fatal("chat probe should succeed against the stub")
 	}
 }
+
+func TestVerifyBareArrayCatalogAnonymous(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/models":
+			w.Header().Set("Content-Type", "application/json")
+			io.WriteString(w, `[{"name":"openai-fast","description":"stub","reasoning":true,"tier":"anonymous"}]`)
+		case "/chat/completions":
+			w.Header().Set("Content-Type", "application/json")
+			io.WriteString(w, `{"id":"stub","choices":[{"message":{"role":"assistant","content":"hi"}}]}`)
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+	d, ok := Lookup("pollinations")
+	if !ok {
+		t.Fatal("pollinations provider missing")
+	}
+	d.BaseURL = srv.URL
+	d.ModelsURL = srv.URL + "/models"
+	res, err := Verify(context.Background(), d, "", srv.URL, "", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(res.Models) != 1 || res.Models[0].ID != "openai-fast" {
+		t.Fatalf("bare-array catalog should parse: %+v", res.Models)
+	}
+	if !res.Models[0].Free {
+		t.Fatal("anonymous tier should be marked free")
+	}
+	if !res.ChatOK {
+		t.Fatal("chat probe should succeed against the stub")
+	}
+}
+
+func TestCheckKeyFormatRejectsNonASCIIBytes(t *testing.T) {
+	d, ok := Lookup("nvidia")
+	if !ok {
+		t.Fatal("nvidia provider missing")
+	}
+	for _, bad := range []string{"nvapi-\xEF\xBB\xBFabc12345", "nvapi-abc\x0012345", "nvapi-abc\x7F12345", "nvapi-abc\u2028defg123"} {
+		if err := CheckKeyFormat(d, bad); err == nil {
+			t.Fatalf("expected rejection for %q", bad)
+		}
+	}
+	if err := CheckKeyFormat(d, "nvapi-abc1234567890"); err != nil {
+		t.Fatalf("clean key rejected: %v", err)
+	}
+}
