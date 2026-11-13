@@ -149,11 +149,31 @@ func (m *model) handleProviderKeyKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 	default:
 		if msg.Type == tea.KeyRunes {
-			m.keyInput += string(msg.Runes)
-			m.keyError = ""
+			// Control combos (Ctrl+Space -> NUL, Ctrl+@, etc.) arrive as
+			// ordinary key runes on classic consoles. Only printable ASCII
+			// can belong to an API key; anything invisible is dropped.
+			s := sanitizeKeyRunes(string(msg.Runes))
+			if s != "" {
+				m.keyInput += s
+				m.keyError = ""
+			}
 		}
 		return m, nil
 	}
+}
+
+// sanitizeKeyRunes keeps only printable, non-space ASCII characters — the
+// subset every known API key lives in. Anything else (control bytes, NULs,
+// non-ASCII, C1 controls, spaces) is dropped silently instead of polluting
+// the key and failing verification with a meaningless HTTP error.
+func sanitizeKeyRunes(s string) string {
+	var b strings.Builder
+	for _, r := range s {
+		if r >= 0x21 && r <= 0x7e {
+			b.WriteRune(r)
+		}
+	}
+	return b.String()
 }
 
 func (m *model) handleModelListKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {

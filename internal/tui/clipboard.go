@@ -103,33 +103,54 @@ func copySelectionText(lines []string, start, end selectPoint) string {
 }
 
 func copyToClipboard(text string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	cmdText := func(name string, args ...string) error {
 		cmd := exec.CommandContext(ctx, name, args...)
 		cmd.Stdin = bytes.NewReader([]byte(text))
 		return cmd.Run()
 	}
-	cmdUnicode := func(name string, args ...string) error {
-		cmd := exec.CommandContext(ctx, name, args...)
-		cmd.Stdin = bytes.NewReader(encodeUTF16LE(text))
-		return cmd.Run()
-	}
 
 	switch runtime.GOOS {
 	case "windows":
-		// Console stdin encodings are unreliable on redirected streams:
-		// PowerShell 5.1 delivers redirected stdin one char per raw byte
-		// (NULs intact, BOM not honored, InputEncoding ignored). Read the
-		// raw stream explicitly and decode it as UTF-16LE — no console
-		// encoding involved — then set the clipboard.
-		ps := `$ms=New-Object IO.MemoryStream; [Console]::OpenStandardInput().CopyTo($ms); ` +
-			`$t=[Text.Encoding]::Unicode.GetString($ms.ToArray()) -replace '^\ufeff',''; ` +
-			`Set-Clipboard -Value $t`
-		if err := cmdUnicode("powershell.exe", "-NoProfile", "-Command", ps); err == nil {
-			return nil
+		// Try every clipboard path in order; each attempt reports its own
+		// reason instead of collapsing into one vague message.
+		type attempt struct {
+			name string
+			run  func() error
 		}
-		return errors.New("PowerShell Set-Clipboard failed (UTF-16)")
+		attempts := []attempt{
+			{"powershell.exe UTF-8", func() error {
+				// UTF-8 with BOM + [Console]::In.ReadToEnd() — the path
+				// that survives PowerShell 5.1's console quirks.
+				ps := `$t = [Console]::In.ReadToEnd(); Set-Clipboard -Value $t`
+				cmd := exec.CommandContext(ctx, "powershell.exe", "-NoProfile", "-Command", ps)
+				cmd.Stdin = bytes.NewReader(append([]byte{0xEF, 0xBB, 0xBF}, []byte(text)...))
+				return cmd.Run()
+			}},
+			{"powershell.exe UTF-16LE", func() error {
+				ps := `$ms=New-Object IO.MemoryStream; [Console]::OpenStandardInput().CopyTo($ms); ` +
+					`$t=[Text.Encoding]::Unicode.GetString($ms.ToArray()) -replace '^\ufeff',''; ` +
+					`Set-Clipboard -Value $t`
+				cmd := exec.CommandContext(ctx, "powershell.exe", "-NoProfile", "-Command", ps)
+				cmd.Stdin = bytes.NewReader(encodeUTF16LE(text))
+				return cmd.Run()
+			}},
+			{"clip.exe", func() error {
+				cmd := exec.CommandContext(ctx, "clip.exe")
+				cmd.Stdin = bytes.NewReader([]byte(text))
+				return cmd.Run()
+			}},
+		}
+		var reasons []string
+		for _, a := range attempts {
+			if err := a.run(); err == nil {
+				return nil
+			} else {
+				reasons = append(reasons, fmt.Sprintf("%s: %v", a.name, err))
+			}
+		}
+		return fmt.Errorf("no clipboard path worked (%s)", strings.Join(reasons, "; "))
 	case "darwin":
 		return cmdText("pbcopy")
 	case "linux", "freebsd", "netbsd", "openbsd":
