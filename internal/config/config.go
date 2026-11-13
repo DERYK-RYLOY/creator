@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strconv"
 	"strings"
 
@@ -409,9 +410,17 @@ func tightenConfigFile(path string) {
 	if perm == 0o600 {
 		return
 	}
-	if err := os.Chmod(path, 0o600); err != nil {
-		fmt.Fprintf(os.Stderr, "creator config: %s has mode %04o and could not be tightened: %v\n", path, perm, err)
-		return
+	// Unix only: on Windows, os.Chmod cannot strip group/other access — it
+	// only toggles a read-only flag, and os.Stat keeps reporting 0666 no
+	// matter what. Printing "tightened to 0600" here would claim a security
+	// property that does not exist. The file inherits its ACL from the
+	// user profile folder (already private to this account); hardening it
+	// further is a docs/icacls matter, not a load-time behavior.
+	if runtime.GOOS != "windows" {
+		if err := os.Chmod(path, 0o600); err != nil {
+			fmt.Fprintf(os.Stderr, "creator config: %s had mode %04o and could not be tightened: %v\n", path, perm, err)
+			return
+		}
+		fmt.Fprintf(os.Stderr, "creator config: %s had mode %04o; tightened to 0600\n", path, perm)
 	}
-	fmt.Fprintf(os.Stderr, "creator config: %s had mode %04o; tightened to 0600\n", path, perm)
 }
