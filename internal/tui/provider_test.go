@@ -4,6 +4,8 @@ import (
 	"strings"
 	"testing"
 
+	tea "github.com/charmbracelet/bubbletea"
+
 	"github.com/creatorcli/creator/internal/provider"
 )
 
@@ -120,5 +122,34 @@ func TestFreshModelScanOpensModelsOverlay(t *testing.T) {
 	}
 	if tm.modelsBusy {
 		t.Fatal("busy flag must clear when the fresh scan completes")
+	}
+}
+
+// Paste must not register control combos or other invisible junk in the
+// API-key box — only printable, non-space ASCII survives.
+func TestProviderKeyBoxDropsControlBytes(t *testing.T) {
+	m := &model{overlay: overlayProviderKey}
+	mk := func(r rune) tea.KeyMsg {
+		return tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}}
+	}
+	paste := "AIzaSyCleanKey-123"
+	for _, r := range paste {
+		m.Update(mk(r))
+	}
+	for _, r := range []rune{0x00, 0x16, 0x7F, 0x03, 0x19} {
+		m.Update(mk(r))
+	}
+	m.Update(mk('X'))
+	if m.keyInput != paste+"X" {
+		t.Fatalf("control bytes should be dropped; keyInput=%q", m.keyInput)
+	}
+}
+
+// A Ctrl+V key event must never enter the API-key box.
+func TestProviderKeyBoxIgnoresCtrlVKeyType(t *testing.T) {
+	m := &model{overlay: overlayProviderKey}
+	m.Update(tea.KeyMsg{Type: tea.KeyCtrlV})
+	if m.keyInput != "" {
+		t.Fatalf("KeyCtrlV must not enter the key box, got %q", m.keyInput)
 	}
 }
