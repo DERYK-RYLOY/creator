@@ -178,13 +178,18 @@ try {
         } else {
             $checksums = $null
             try {
-                $checksums = (Invoke-WebRequest -Uri (Get-AssetUrl $Version "checksums.txt") -UseBasicParsing).Content
+                $resp = Invoke-WebRequest -Uri (Get-AssetUrl $Version "checksums.txt") -UseBasicParsing
+                # GitHub serves checksums.txt as application/octet-stream, so .Content
+                # may come back as bytes — normalize to text before parsing.
+                $body = $resp.Content
+                if ($body -is [byte[]]) { $body = [System.Text.Encoding]::UTF8.GetString($body) }
+                $checksums = $body
             } catch {
                 Write-Warn "checksums.txt unreadable from the release - installing without verification"
             }
         }
         if ($checksums) {
-            $expected = ($checksums -split "`n" | ForEach-Object { $_.Trim() } | Where-Object { $_ -match "\s$([regex]::Escape($asset))$" } | Select-Object -First 1) -split '\s+' | Select-Object -First 1
+            $expected = ($checksums -split "`n" | ForEach-Object { $_.Trim() } | Where-Object { $_ -match "\s+$([regex]::Escape($asset))$" } | Select-Object -First 1) -split '\s+' | Select-Object -First 1
             if (-not $expected) {
                 Write-Warn "no checksum line for $asset - installing without verification"
             } else {
