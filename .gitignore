@@ -5,6 +5,8 @@
 *.test
 /creator
 /tools/pdfgen/pdfgen
+/dist/
+/coverage.out
 
 # Local state and runtime data — never commit credentials or DBs
 .creator/
@@ -15,6 +17,17 @@ creator.db
 /state/
 /out/
 /checkpoints/
+
+# Credentials, keys and environment files — never, ever
+keys.json
+*.keys.json
+.env
+.env.*
+*.pem
+*.key
+credentials.json
+secrets.json
+*.p12
 
 # Editor/OS noise
 *~

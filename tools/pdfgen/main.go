@@ -238,7 +238,7 @@ func main() {
 	for _, l := range []string{
 		"Date: 29 October 2026",
 		"Source: the design conversation (three pasted plans, your corrections, four decisions you made)",
-		"Module: github.com/creatorcli/creator",
+		"Module: github.com/DERYK-RYLOY/creator",
 		"Code: 7,259 lines of Go across 29 files, 11 packages",
 		"Artifact: bin/creator.exe - 9,051,648 bytes, no CGO, no runtime dependencies",
 		"Status: builds clean, all tests pass, end-to-end verified against a fake model server",

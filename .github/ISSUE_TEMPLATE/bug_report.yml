@@ -1,0 +1,52 @@
+name: Bug report
+description: Something is broken in Creator (IDE, engine, tools, installer)
+labels: [bug]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: Creator version
+      description: Run `creator version`
+      placeholder: v0.1.0
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: OS / architecture
+      options:
+        - Windows (amd64)
+        - Windows (arm64)
+        - Linux (amd64)
+        - Linux (arm64)
+        - macOS (amd64)
+        - macOS (arm64)
+        - Other (say so in the description)
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What you did, what you expected, what happened instead.
+      placeholder: |
+        1. Ran `creator run "..."`
+        2. …
+        3. Got: …
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Output or logs
+      description: Paste relevant output. **Redact any API keys or tokens first.**
+      render: shell
+    validations:
+      required: false
+  - type: textarea
+    id: env
+    attributes:
+      label: Environment
+      description: Shell, terminal, tmux/screen? `creator tui` or headless?
+    validations:
+      required: false

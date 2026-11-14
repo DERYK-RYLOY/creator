@@ -15,9 +15,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/creatorcli/creator/internal/agent"
-	"github.com/creatorcli/creator/internal/config"
-	"github.com/creatorcli/creator/internal/store"
+	"github.com/DERYK-RYLOY/creator/internal/agent"
+	"github.com/DERYK-RYLOY/creator/internal/config"
+	"github.com/DERYK-RYLOY/creator/internal/store"
 )
 
 // ---------------------------------------------------------------------------

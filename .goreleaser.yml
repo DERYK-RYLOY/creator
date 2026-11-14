@@ -1,0 +1,101 @@
+# Creator — release engineering.
+# On a v* tag: CI runs the tests, then GoReleaser cross-compiles the three
+# binaries (creator, creator-tui, ctr) for Linux/Windows/macOS on amd64+arm64,
+# packages them into checksummed archives (install scripts included), and
+# publishes a GitHub Release with the changelog. VERSION=0.1.0 exactly.
+#
+# Run locally without publishing: goreleaser release --snapshot --clean
+version: 2
+
+project_name: creator
+
+before:
+  hooks:
+    - go mod download
+
+builds:
+  - id: creator
+    main: ./cmd/creator
+    binary: creator
+    env: [CGO_ENABLED=0]
+    goos: [linux, windows, darwin]
+    goarch: [amd64, arm64]
+    flags: [-trimpath]
+    ldflags:
+      - -s -w -X github.com/DERYK-RYLOY/creator/internal/buildinfo.Version={{ .RawVersion }}
+
+  - id: creator-tui
+    main: ./cmd/creator-tui
+    binary: creator-tui
+    env: [CGO_ENABLED=0]
+    goos: [linux, windows, darwin]
+    goarch: [amd64, arm64]
+    flags: [-trimpath]
+    ldflags:
+      - -s -w -X github.com/DERYK-RYLOY/creator/internal/buildinfo.Version={{ .RawVersion }}
+
+  - id: ctr
+    main: ./cmd/ctr
+    binary: ctr
+    env: [CGO_ENABLED=0]
+    goos: [linux, windows, darwin]
+    goarch: [amd64, arm64]
+    flags: [-trimpath]
+    ldflags:
+      - -s -w -X github.com/DERYK-RYLOY/creator/internal/buildinfo.Version={{ .RawVersion }}
+
+archives:
+  - id: creator
+    name_template: "creator-{{ .RawVersion }}-{{ .Os }}-{{ .Arch }}"
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    files:
+      - LICENSE
+      - README.md
+
+checksum:
+  name_template: "checksums.txt"
+  algorithm: sha256
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^Merge"
+      - "^chore"
+      - "^docs:"
+
+release:
+  draft: false
+  name_template: "Creator {{ .Tag }}"
+  footer: |
+    ## Install one line
+
+    **macOS / Linux**
+    ```sh
+    curl -fsSL https://raw.githubusercontent.com/DERYK-RYLOY/creator/main/install.sh | sh
+    ```
+
+    **Windows (PowerShell)**
+    ```powershell
+    irm https://raw.githubusercontent.com/DERYK-RYLOY/creator/main/install.ps1 | iex
+    ```
+
+    **With Go**
+    ```sh
+    go install github.com/DERYK-RYLOY/creator/cmd/creator@{{ .Tag }}
+    go install github.com/DERYK-RYLOY/creator/cmd/creator-tui@{{ .Tag }}
+    go install github.com/DERYK-RYLOY/creator/cmd/ctr@{{ .Tag }}
+    ```
+
+    Every archive ships this file list: `creator`, `creator-tui`, `ctr`, `LICENSE`, `README.md`.
+    SHA-256 checksums: `checksums.txt` attached to this release.
+  extra_files:
+    - glob: ./install.sh
+    - glob: ./install.ps1
+
+# goreleaser's default is to fail on uncommitted changes; snapshot mode is
+# how local verification runs without committing first.
+snapshot:
+  version_template: "{{ .Tag }}-snapshot"

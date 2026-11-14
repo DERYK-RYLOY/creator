@@ -20,26 +20,26 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/creatorcli/creator/internal/agent"
-	"github.com/creatorcli/creator/internal/board"
-	"github.com/creatorcli/creator/internal/config"
-	"github.com/creatorcli/creator/internal/delegate"
-	"github.com/creatorcli/creator/internal/id"
-	"github.com/creatorcli/creator/internal/knowledge"
-	"github.com/creatorcli/creator/internal/mcp"
-	"github.com/creatorcli/creator/internal/plugin"
-	"github.com/creatorcli/creator/internal/policy"
-	"github.com/creatorcli/creator/internal/provider"
-	"github.com/creatorcli/creator/internal/reduce"
-	"github.com/creatorcli/creator/internal/runner"
-	"github.com/creatorcli/creator/internal/store"
-	"github.com/creatorcli/creator/internal/tools"
-	"github.com/creatorcli/creator/internal/tui"
+	"github.com/DERYK-RYLOY/creator/internal/agent"
+	"github.com/DERYK-RYLOY/creator/internal/board"
+	"github.com/DERYK-RYLOY/creator/internal/config"
+	"github.com/DERYK-RYLOY/creator/internal/delegate"
+	"github.com/DERYK-RYLOY/creator/internal/id"
+	"github.com/DERYK-RYLOY/creator/internal/knowledge"
+	"github.com/DERYK-RYLOY/creator/internal/mcp"
+	"github.com/DERYK-RYLOY/creator/internal/plugin"
+	"github.com/DERYK-RYLOY/creator/internal/policy"
+	"github.com/DERYK-RYLOY/creator/internal/provider"
+	"github.com/DERYK-RYLOY/creator/internal/reduce"
+	"github.com/DERYK-RYLOY/creator/internal/runner"
+	"github.com/DERYK-RYLOY/creator/internal/store"
+	"github.com/DERYK-RYLOY/creator/internal/tools"
+	"github.com/DERYK-RYLOY/creator/internal/tui"
+
+	"github.com/DERYK-RYLOY/creator/internal/buildinfo"
 
 	"golang.org/x/term"
 )
-
-const version = "0.1.0"
 
 func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
@@ -208,7 +208,7 @@ func dispatch(ctx context.Context, args []string) error {
 	case "init":
 		return cmdInit(rest)
 	case "version", "--version":
-		fmt.Printf("creator %s\n", version)
+		fmt.Printf("creator %s\n", buildinfo.Version)
 		return nil
 	case "help", "--help", "-h":
 		printUsage(os.Stdout)
@@ -313,7 +313,7 @@ HOW IT DIFFERS
   context. Long commands run in the background and are polled, so the loop never
   blocks. Every mutation is checkpointed. Every command is parsed to a shell AST
   and classified before it runs.
-`, version)
+`, buildinfo.Version)
 }
 
 // ---------------------------------------------------------------------------
@@ -954,9 +954,17 @@ func cmdInstall(args []string) error {
 		}
 		fmt.Printf("installed %s\n", out)
 	}
-	if _, err := exec.LookPath("creator"); err != nil {
-		fmt.Printf("\nadd %s to your PATH, then creator, creator-tui and ctr work from any folder\n", *dir)
+	if os.Getenv("CREATOR_NO_PATH") != "" {
+		fmt.Printf("\nCREATOR_NO_PATH is set — add %s to your PATH, then type `creator`\n", *dir)
+	} else if added, pathErr := ensureUserPathIncludes(*dir); pathErr != nil {
+		fmt.Fprintf(os.Stderr, "\nwarning: could not update your PATH automatically: %v\n", pathErr)
+		fmt.Printf("add %s to your PATH, then creator, creator-tui and ctr work from any folder\n", *dir)
+	} else if added {
+		fmt.Printf("\nPATH updated — open a NEW terminal and just type `creator`\n")
+	} else {
+		fmt.Printf("\n%s is already on your PATH\n", *dir)
 	}
+	fmt.Printf("\n◆ CREATOR ready — creator | ctr | creator-tui\n  try:     creator\n  connect: creator connect <provider>\n")
 	return nil
 }
 
@@ -1311,7 +1319,7 @@ func cmdMCP(ctx context.Context, args []string) error {
 	}
 	server := &mcp.Server{
 		Tools:   registry,
-		Version: version,
+		Version: buildinfo.Version,
 		In:      os.Stdin,
 		Out:     os.Stdout,
 		Logf: func(format string, a ...any) {

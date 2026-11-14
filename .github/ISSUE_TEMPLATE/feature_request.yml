@@ -1,0 +1,41 @@
+name: Feature request
+description: Propose an improvement to Creator
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: Describe the pain, not only the solution.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: The change
+      description: What should happen? Rough is fine — we will refine it together.
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Mission control (TUI)
+        - Agent tools / engine
+        - Providers & models
+        - Task board
+        - Installer / packaging
+        - Documentation
+        - Something else
+    validations:
+      required: true
+  - type: checkboxes
+    id: context
+    attributes:
+      label: Checklist
+      options:
+        - label: I searched existing issues and did not find this
+          required: true
+        - label: I understand a design may be preferred over this — open to discussion
+          required: true

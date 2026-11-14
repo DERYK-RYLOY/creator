@@ -1,0 +1,29 @@
+# Line endings: LF everywhere, so a Windows checkout cannot bounce gofmt.
+* text=auto eol=lf
+
+# Binary assets: never normalize these.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.zip binary
+*.tar.gz binary
+*.tgz binary
+*.exe binary
+*.dll binary
+*.so binary
+*.dylib binary
+*.db binary
+*.wasm binary
+*.woff binary
+*.woff2 binary
+
+# Scripts must keep LF so they run anywhere.
+install.sh text eol=lf
+*.go text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.json text eol=lf
+*.md text eol=lf
