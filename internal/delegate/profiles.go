@@ -43,7 +43,8 @@ var profiles = []Profile{
 		ReadOnly:    true,
 		Tools: []string{
 			"read", "list", "glob", "grep", "outline", "read_symbol",
-			"search_files", "hash", "strings", "out", "jobs",
+			"search_files", "tree", "todos", "find_def", "repo_stats",
+			"hash", "strings", "out", "jobs",
 		},
 		MaxSteps:     20,
 		OutputTokens: 250,
@@ -56,7 +57,7 @@ var profiles = []Profile{
 		ReadOnly:    true,
 		Tools: []string{
 			"read", "list", "glob", "grep", "outline", "read_symbol",
-			"search_files", "diff", "review", "out",
+			"search_files", "tree", "find_def", "repo_stats", "diff", "review", "out",
 		},
 		MaxSteps:     16,
 		OutputTokens: 400,
@@ -69,7 +70,7 @@ var profiles = []Profile{
 		ReadOnly:    true,
 		Tools: []string{
 			"read", "list", "glob", "grep", "outline", "read_symbol",
-			"search_files", "diff", "review", "out", "jobs",
+			"search_files", "tree", "find_def", "todos", "diff", "review", "out", "jobs",
 		},
 		MaxSteps:     20,
 		OutputTokens: 300,

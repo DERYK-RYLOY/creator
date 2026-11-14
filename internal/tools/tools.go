@@ -14,12 +14,12 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/creatorcli/creator/internal/id"
-	"github.com/creatorcli/creator/internal/policy"
-	"github.com/creatorcli/creator/internal/provider"
-	"github.com/creatorcli/creator/internal/reduce"
-	"github.com/creatorcli/creator/internal/runner"
-	"github.com/creatorcli/creator/internal/store"
+	"github.com/DERYK-RYLOY/creator/internal/id"
+	"github.com/DERYK-RYLOY/creator/internal/policy"
+	"github.com/DERYK-RYLOY/creator/internal/provider"
+	"github.com/DERYK-RYLOY/creator/internal/reduce"
+	"github.com/DERYK-RYLOY/creator/internal/runner"
+	"github.com/DERYK-RYLOY/creator/internal/store"
 )
 
 // Env is the runtime a tool executes against.
@@ -103,6 +103,10 @@ func New(env *Env) *Registry {
 	r.register(diffTool())
 	r.register(reviewTool())
 	r.register(searchFilesTool())
+	r.register(treeTool())
+	r.register(todosTool())
+	r.register(findDefTool())
+	r.register(repoStatsTool())
 	r.register(shellTool())
 	r.register(jobsTool())
 	r.register(outTool())
