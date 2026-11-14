@@ -5,8 +5,8 @@ import (
 	"strings"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
 	"github.com/DERYK-RYLOY/creator/internal/store"
+	tea "github.com/charmbracelet/bubbletea"
 )
 
 type taskBook struct {

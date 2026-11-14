@@ -17,9 +17,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/creack/pty"
 	"github.com/DERYK-RYLOY/creator/internal/id"
 	"github.com/DERYK-RYLOY/creator/internal/store"
+	"github.com/creack/pty"
 )
 
 // Status is a job's lifecycle state.
