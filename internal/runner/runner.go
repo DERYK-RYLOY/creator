@@ -18,8 +18,8 @@ import (
 	"time"
 
 	"github.com/creack/pty"
-	"github.com/creatorcli/creator/internal/id"
-	"github.com/creatorcli/creator/internal/store"
+	"github.com/DERYK-RYLOY/creator/internal/id"
+	"github.com/DERYK-RYLOY/creator/internal/store"
 )
 
 // Status is a job's lifecycle state.

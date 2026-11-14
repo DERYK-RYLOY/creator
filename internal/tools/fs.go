@@ -13,7 +13,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/creatorcli/creator/internal/reduce"
+	"github.com/DERYK-RYLOY/creator/internal/reduce"
 )
 
 func schema(s string) json.RawMessage { return json.RawMessage(s) }

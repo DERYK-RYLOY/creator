@@ -14,7 +14,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/creatorcli/creator/internal/reduce"
+	"github.com/DERYK-RYLOY/creator/internal/reduce"
 )
 
 // readFileCapped reads at most max+1 bytes from p and fails if the file is
@@ -250,7 +250,7 @@ func handleNetFetch(ctx context.Context, raw json.RawMessage) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	req.Header.Set("User-Agent", "creator/0.1 (+https://github.com/creatorcli/creator)")
+	req.Header.Set("User-Agent", "creator/0.1 (+https://github.com/DERYK-RYLOY/creator)")
 	resp, err := client.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("fetch failed: %w", err)

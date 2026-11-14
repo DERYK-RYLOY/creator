@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/creatorcli/creator/internal/reduce"
+	"github.com/DERYK-RYLOY/creator/internal/reduce"
 )
 
 // webFetchTool fetches a page and returns readable text rather than markup.
@@ -85,7 +85,7 @@ func handleWebFetch(ctx context.Context, raw json.RawMessage) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	req.Header.Set("User-Agent", "creator/0.1 (+https://github.com/creatorcli/creator)")
+	req.Header.Set("User-Agent", "creator/0.1 (+https://github.com/DERYK-RYLOY/creator)")
 	req.Header.Set("Accept", "text/html,application/xhtml+xml,text/plain;q=0.9,*/*;q=0.5")
 	resp, err := client.Do(req)
 	if err != nil {

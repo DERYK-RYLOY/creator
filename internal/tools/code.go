@@ -14,7 +14,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/creatorcli/creator/internal/reduce"
+	"github.com/DERYK-RYLOY/creator/internal/reduce"
 )
 
 // outlineTool extracts the structural outline of a file: functions, types,

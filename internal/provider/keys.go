@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/creatorcli/creator/internal/config"
+	"github.com/DERYK-RYLOY/creator/internal/config"
 )
 
 // Cred is a credential saved by the connect flow. BaseURL carries overrides

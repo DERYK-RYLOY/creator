@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/creatorcli/creator/internal/store"
+	"github.com/DERYK-RYLOY/creator/internal/store"
 )
 
 // TaskDetail is the exported single-task render used by the CLI

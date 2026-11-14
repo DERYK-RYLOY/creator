@@ -11,7 +11,7 @@ import (
 
 	"github.com/yuin/gopher-lua"
 
-	"github.com/creatorcli/creator/internal/tools"
+	"github.com/DERYK-RYLOY/creator/internal/tools"
 )
 
 const slugifyPlugin = `

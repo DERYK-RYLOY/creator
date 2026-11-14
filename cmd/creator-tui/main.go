@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/creatorcli/creator/internal/tui"
+	"github.com/DERYK-RYLOY/creator/internal/tui"
 )
 
 func main() {

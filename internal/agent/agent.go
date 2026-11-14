@@ -12,9 +12,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/creatorcli/creator/internal/provider"
-	"github.com/creatorcli/creator/internal/store"
-	"github.com/creatorcli/creator/internal/tools"
+	"github.com/DERYK-RYLOY/creator/internal/provider"
+	"github.com/DERYK-RYLOY/creator/internal/store"
+	"github.com/DERYK-RYLOY/creator/internal/tools"
 )
 
 // Event is a progress notification emitted while the agent works.

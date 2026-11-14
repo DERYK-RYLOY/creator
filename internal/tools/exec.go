@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/creatorcli/creator/internal/reduce"
-	"github.com/creatorcli/creator/internal/runner"
+	"github.com/DERYK-RYLOY/creator/internal/reduce"
+	"github.com/DERYK-RYLOY/creator/internal/runner"
 )
 
 func shellTool() Tool {

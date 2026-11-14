@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/creatorcli/creator/internal/store"
-	"github.com/creatorcli/creator/internal/tools"
+	"github.com/DERYK-RYLOY/creator/internal/store"
+	"github.com/DERYK-RYLOY/creator/internal/tools"
 )
 
 const tasksSchema = `{

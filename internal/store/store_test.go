@@ -10,7 +10,7 @@ import (
 
 	bolt "go.etcd.io/bbolt"
 
-	"github.com/creatorcli/creator/internal/provider"
+	"github.com/DERYK-RYLOY/creator/internal/provider"
 )
 
 func newStoreAt(t *testing.T, dir string) *Store {

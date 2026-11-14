@@ -378,10 +378,10 @@ func fetchModels(ctx context.Context, d Descriptor, base, key string, step func(
 	trimmed := bytes.TrimSpace(body)
 	if len(trimmed) > 0 && trimmed[0] == '[' {
 		var arr []struct {
-			Name  string `json:"name"`
-			ID    string `json:"id"`
-			Tier  string `json:"tier"`
-			Note  string `json:"description"`
+			Name string `json:"name"`
+			ID   string `json:"id"`
+			Tier string `json:"tier"`
+			Note string `json:"description"`
 		}
 		if err := json.Unmarshal(trimmed, &arr); err != nil {
 			return nil, false, fmt.Errorf("%s returned an unreadable model list: %v (body: %s)", d.Name, err, snippet(string(body)))

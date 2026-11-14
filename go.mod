@@ -1,4 +1,4 @@
-module github.com/creatorcli/creator
+module github.com/DERYK-RYLOY/creator
 
 go 1.27.0
 

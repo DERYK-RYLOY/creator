@@ -30,12 +30,12 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/creatorcli/creator/internal/agent"
-	"github.com/creatorcli/creator/internal/id"
-	"github.com/creatorcli/creator/internal/provider"
-	"github.com/creatorcli/creator/internal/reduce"
-	"github.com/creatorcli/creator/internal/store"
-	"github.com/creatorcli/creator/internal/tools"
+	"github.com/DERYK-RYLOY/creator/internal/agent"
+	"github.com/DERYK-RYLOY/creator/internal/id"
+	"github.com/DERYK-RYLOY/creator/internal/provider"
+	"github.com/DERYK-RYLOY/creator/internal/reduce"
+	"github.com/DERYK-RYLOY/creator/internal/store"
+	"github.com/DERYK-RYLOY/creator/internal/tools"
 )
 
 // Spec is one delegation request.

@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/creatorcli/creator/internal/tools"
+	"github.com/DERYK-RYLOY/creator/internal/tools"
 )
 
 func TestLookupProfile(t *testing.T) {

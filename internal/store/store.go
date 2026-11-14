@@ -20,8 +20,8 @@ import (
 
 	bolt "go.etcd.io/bbolt"
 
-	"github.com/creatorcli/creator/internal/id"
-	"github.com/creatorcli/creator/internal/provider"
+	"github.com/DERYK-RYLOY/creator/internal/id"
+	"github.com/DERYK-RYLOY/creator/internal/provider"
 )
 
 var (

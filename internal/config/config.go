@@ -12,7 +12,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/creatorcli/creator/internal/reduce"
+	"github.com/DERYK-RYLOY/creator/internal/reduce"
 )
 
 // Config is the fully resolved configuration for a Creator invocation.

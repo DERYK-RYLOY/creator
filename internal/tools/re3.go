@@ -8,7 +8,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/creatorcli/creator/internal/reduce"
+	"github.com/DERYK-RYLOY/creator/internal/reduce"
 )
 
 func rot13Tool() Tool {

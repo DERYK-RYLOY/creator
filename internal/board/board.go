@@ -35,10 +35,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/creatorcli/creator/internal/policy"
-	"github.com/creatorcli/creator/internal/runner"
-	"github.com/creatorcli/creator/internal/store"
-	"github.com/creatorcli/creator/internal/tools"
+	"github.com/DERYK-RYLOY/creator/internal/policy"
+	"github.com/DERYK-RYLOY/creator/internal/runner"
+	"github.com/DERYK-RYLOY/creator/internal/store"
+	"github.com/DERYK-RYLOY/creator/internal/tools"
 )
 
 // Task statuses. "blocked" is derived at render time, never stored.
