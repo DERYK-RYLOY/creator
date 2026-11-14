@@ -14,7 +14,7 @@ func splitEditBlock() block {
 
 func TestSplitEditToolBoxRendersSideBySide(t *testing.T) {
 	b := splitEditBlock()
-	lines := renderToolBox(b, 110)
+	lines := renderToolBox(b, 110, nil)
 	out := strings.Join(lines, "\n")
 	if strings.Contains(out, `{"path"`) {
 		t.Fatalf("raw args leaked into the box:\n%s", out)
@@ -31,8 +31,8 @@ func TestSplitEditToolBoxRendersSideBySide(t *testing.T) {
 		t.Fatalf("marker column missing:\n%s", out)
 	}
 	// expanded must reveal more rows, not change the frame width
-	full := renderToolBox(block{kind: kindTool, title: "edit", body: largeEditArgs(40), ok: true, at: time.Now(), expanded: true}, 110)
-	collapsed := renderToolBox(block{kind: kindTool, title: "edit", body: largeEditArgs(40), ok: true, at: time.Now()}, 110)
+	full := renderToolBox(block{kind: kindTool, title: "edit", body: largeEditArgs(40), ok: true, at: time.Now(), expanded: true}, 110, nil)
+	collapsed := renderToolBox(block{kind: kindTool, title: "edit", body: largeEditArgs(40), ok: true, at: time.Now()}, 110, nil)
 	if len(full) <= len(collapsed) {
 		t.Fatalf("expand should reveal more lines: full=%d collapsed=%d", len(full), len(collapsed))
 	}
@@ -43,7 +43,7 @@ func TestSplitEditToolBoxRendersSideBySide(t *testing.T) {
 
 func TestSplitWriteToolBoxRendersAdditions(t *testing.T) {
 	b := block{kind: kindTool, title: "write", body: `{"path":"out.txt","content":"line one\nline two\nline three\n"}`, ok: true, at: time.Now()}
-	lines := renderToolBox(b, 100)
+	lines := renderToolBox(b, 100, nil)
 	out := strings.Join(lines, "\n")
 	if !strings.Contains(out, "+ ") {
 		t.Fatalf("addition markers missing:\n%s", out)
@@ -59,7 +59,7 @@ func TestSplitPatchToolBoxShowsHunkNumbers(t *testing.T) {
 	diff := "@@ -10,3 +10,4 @@ func main() {\n ctx\n-old line\n+new line\n+added line\n ctx2\n"
 	args := fmt.Sprintf("{\"path\":\"pkg/main.go\",\"diff\":%q}", diff)
 	b := block{kind: kindTool, title: "patch", body: args, ok: true, at: time.Now()}
-	lines := renderToolBox(b, 110)
+	lines := renderToolBox(b, 110, nil)
 	out := strings.Join(lines, "\n")
 	if !strings.Contains(out, "@@ -10,3 +10,4 @@") {
 		t.Fatalf("hunk header missing:\n%s", out)
@@ -75,7 +75,7 @@ func TestSplitPatchToolBoxShowsHunkNumbers(t *testing.T) {
 func TestSplitDiffToolBoxRendersTailDiff(t *testing.T) {
 	tail := "--- a/old.go\n+++ b/new.go\n@@ -1,2 +1,3 @@\n keep\n-drop\n+swap\n+extra\n"
 	b := block{kind: kindTool, title: "diff", body: `{"path_a":"old.go","path_b":"new.go"}`, tail: tail, ok: true, at: time.Now()}
-	lines := renderToolBox(b, 110)
+	lines := renderToolBox(b, 110, nil)
 	out := strings.Join(lines, "\n")
 	if !strings.Contains(out, "keep") || !strings.Contains(out, "drop") || !strings.Contains(out, "swap") || !strings.Contains(out, "extra") {
 		t.Fatalf("tail diff was not split into panes:\n%s", out)
@@ -84,7 +84,7 @@ func TestSplitDiffToolBoxRendersTailDiff(t *testing.T) {
 
 func TestSplitFallsBackOnNarrowTerminal(t *testing.T) {
 	b := splitEditBlock()
-	lines := renderToolBox(b, 70)
+	lines := renderToolBox(b, 70, nil)
 	out := strings.Join(lines, "\n")
 	if strings.Contains(out, " │ ") {
 		t.Fatalf("narrow terminal should not render split panes:\n%s", out)

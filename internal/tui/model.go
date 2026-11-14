@@ -5,7 +5,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/creatorcli/creator/internal/provider"
+	"github.com/DERYK-RYLOY/creator/internal/provider"
 
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -45,6 +45,7 @@ const (
 	overlaySessions
 	overlayTasks
 	overlayTheme
+	overlayHelp
 )
 
 type modelRow struct {
@@ -112,12 +113,32 @@ type selectPoint struct {
 	col  int
 }
 
+// renderCache memoizes the fully rendered, lens-filtered transcript lines
+// (pre-scroll). Scrolling only slices the cached slice, so mouse-wheel
+// frames no longer re-render every block.
+type blockRange struct{ start, end, idx int }
+
+type renderCache struct {
+	valid  bool
+	bodyW  int
+	gen    int64
+	lens   int
+	search string // active search query; "" when search is closed or query empty
+	theme  string
+	lines  []string
+	ranges []blockRange
+}
+
 type model struct {
 	opts   options
 	exe    string
 	width  int
 	height int
 	cwd    string
+
+	gitBranch      string // detected once at startup from .git/HEAD
+	sidebar        bool   // right-hand sidebar visibility
+	sidebarTouched bool   // user pressed ctrl+b — stop auto-toggling on resize
 
 	input      string
 	history    []string
@@ -146,6 +167,30 @@ type model struct {
 	paletteView []commandItem
 
 	scroll int
+	gen    int64 // render generation — bumped whenever transcript rendering could change
+
+	// highlight lens — 35 one-keystroke filters for the conversation
+	lensIdx    int // 0 = off, 1..len(lensCatalog) = active (1 = lensCatalog[0])
+	lensHits   int // occurrences across visible blocks (set on render)
+	lensHidden int // non-user blocks hidden by the active lens
+
+	// in-transcript search (ctrl+f)
+	searchActive bool
+	searchQuery  string
+	matchIdx     int
+	searchTotal  int
+	matchLines   []int // line index per match ordinal, rebuilt with the cache
+
+	// slash-command frecency
+	recentCmds []string
+
+	renderCache renderCache
+
+	// last completed run stats (for /usage)
+	lastRunTools     int
+	lastRunTokensIn  int
+	lastRunTokensOut int
+	lastRunDuration  time.Duration
 
 	overlay      overlayMode
 	overlayQuery string

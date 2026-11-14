@@ -7,9 +7,9 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/creatorcli/creator/internal/config"
-	"github.com/creatorcli/creator/internal/provider"
-	"github.com/creatorcli/creator/internal/store"
+	"github.com/DERYK-RYLOY/creator/internal/config"
+	"github.com/DERYK-RYLOY/creator/internal/provider"
+	"github.com/DERYK-RYLOY/creator/internal/store"
 )
 
 type sessionRowsMsg []sessionRow
@@ -197,7 +197,7 @@ func (m *model) handleSessionListKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 func (m *model) sessionsView(w, h int) string {
 	rows := m.filteredSessionRows()
 	lines := []string{
-		orange.Bold(true).Render("sessions"),
+		sectionTitle("sessions"),
 		faint.Render("type to filter · ↑/↓ scroll · enter resume · esc back"),
 	}
 	if strings.TrimSpace(m.overlayQuery) != "" {

@@ -7,7 +7,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/creatorcli/creator/internal/config"
+	"github.com/DERYK-RYLOY/creator/internal/config"
 )
 
 func (m *model) openTheme(query string) {
@@ -158,7 +158,7 @@ func (m *model) handleThemeListKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 func (m *model) themeView(w, h int) string {
 	lines := []string{
-		orange.Bold(true).Render("themes"),
+		sectionTitle("themes"),
 		faint.Render("type to filter · ↑/↓ preview · enter apply & save · esc revert"),
 	}
 	if strings.TrimSpace(m.overlayQuery) != "" {

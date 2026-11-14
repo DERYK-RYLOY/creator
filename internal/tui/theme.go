@@ -197,6 +197,90 @@ var builtinThemes = []Theme{
 		Font:    FontSpec{Recommended: "IBM Plex Mono", Fallback: []string{"JetBrains Mono", "Fira Code", "monospace"}, Ligatures: "code-only", Weight: 500, LineHeight: 1.40},
 		Border:  "rounded", IconSet: "auto", CadenceMs: 90, LineHeight: 1.40, Recommended: "IBM Plex Mono", Fallbacks: []string{"JetBrains Mono", "Fira Code", "monospace"},
 	},
+	{
+		Slug: "lunar-tide-pearl-dusk", Name: "Lunar Tide & Pearl Dusk", Mode: "dark",
+		Palette: []string{"#0a0e14", "#101722", "#16202e", "#1d2837", "#27334a", "#32415c", "#3f4f6e", "#4d5f82", "#5d7094", "#7084aa", "#8696b4", "#9da9c2", "#b6bccd", "#cecdd3", "#e2ded6", "#efe9df", "#f5efe4", "#faf5ea", "#fdfbf3", "#ffffff"},
+		Font:    FontSpec{Recommended: "JetBrains Mono", Fallback: []string{"IBM Plex Mono", "Geist Mono", "Cascadia Code", "monospace"}, Ligatures: "code-only", Weight: 400, LineHeight: 1.40},
+		Border:  "rounded", IconSet: "auto", CadenceMs: 90, LineHeight: 1.40, Recommended: "JetBrains Mono", Fallbacks: []string{"IBM Plex Mono", "Geist Mono", "monospace"},
+	},
+	{
+		Slug: "aurora-veil-frozen-cobalt", Name: "Aurora Veil & Frozen Cobalt", Mode: "dark",
+		Palette: []string{"#060b14", "#0b1220", "#101a2e", "#16233b", "#1d2d49", "#243854", "#2d4460", "#36526d", "#42607b", "#4f6f8a", "#5f7f99", "#728fa6", "#87a0b2", "#9db2c0", "#b2c5cd", "#c4d6da", "#d5e6e8", "#e4f1f1", "#eef8f7", "#f7fffb"},
+		Font:    FontSpec{Recommended: "Geist Mono", Fallback: []string{"JetBrains Mono", "IBM Plex Mono", "monospace"}, Ligatures: "off", Weight: 500, LineHeight: 1.35},
+		Border:  "sharp", IconSet: "auto", CadenceMs: 90, LineHeight: 1.35, Recommended: "Geist Mono", Fallbacks: []string{"JetBrains Mono", "IBM Plex Mono", "monospace"},
+	},
+	{
+		Slug: "imperial-jade-forbidden-gold", Name: "Imperial Jade & Forbidden Gold", Mode: "dark",
+		Palette: []string{"#080d0a", "#0d1510", "#121f18", "#182a20", "#203527", "#294134", "#334e3f", "#3f5c4c", "#4d6859", "#5d7567", "#6f8374", "#829283", "#96a294", "#a8b4a6", "#b9c6b4", "#cad6bf", "#dde6cf", "#ecf1da", "#f5f8e8", "#fcfff0"},
+		Font:    FontSpec{Recommended: "IBM Plex Mono", Fallback: []string{"Iosevka", "JetBrains Mono", "monospace"}, Ligatures: "off", Weight: 500, LineHeight: 1.40},
+		Border:  "minimal", IconSet: "auto", CadenceMs: 160, LineHeight: 1.40, Recommended: "IBM Plex Mono", Fallbacks: []string{"JetBrains Mono", "monospace"},
+	},
+	{
+		Slug: "deep-space-ion-violet", Name: "Deep Space & Ion Violet", Mode: "dark",
+		Palette: []string{"#07060f", "#0d0b1c", "#131029", "#191539", "#201c4a", "#282457", "#312d66", "#3d3876", "#494487", "#564f99", "#645fab", "#726fbd", "#837fcf", "#958fe0", "#a89fed", "#baaff8", "#ccc1fd", "#ddd4ff", "#ebe6ff", "#f8f6ff"},
+		Font:    FontSpec{Recommended: "Iosevka", Fallback: []string{"JetBrains Mono", "Geist Mono", "Cascadia Code", "monospace"}, Ligatures: "code-only", Weight: 500, LineHeight: 1.40},
+		Border:  "sharp", IconSet: "auto", CadenceMs: 60, LineHeight: 1.40, Recommended: "Iosevka", Fallbacks: []string{"JetBrains Mono", "Geist Mono", "monospace"},
+	},
+	{
+		Slug: "sakura-static-neon-blossom", Name: "Sakura Static & Neon Blossom", Mode: "dark",
+		Palette: []string{"#0f060d", "#1a0c18", "#25111f", "#30172a", "#3e1e35", "#4d263f", "#5e2e4c", "#6f385a", "#81436a", "#934f7a", "#a65d8b", "#b96b9c", "#cb7bad", "#dd8cbe", "#ec9dcf", "#f6aedd", "#fcc3e8", "#fed7ef", "#ffe7f6", "#fff5fb"},
+		Font:    FontSpec{Recommended: "Fira Code", Fallback: []string{"Geist Mono", "JetBrains Mono", "monospace"}, Ligatures: "code-only", Weight: 500, LineHeight: 1.45},
+		Border:  "rounded", IconSet: "auto", CadenceMs: 90, LineHeight: 1.45, Recommended: "Fira Code", Fallbacks: []string{"Geist Mono", "JetBrains Mono", "monospace"},
+	},
+	{
+		Slug: "desert-glass-mirage", Name: "Desert Glass & Mirage", Mode: "dark",
+		Palette: []string{"#0f0c08", "#1a1510", "#241e17", "#2f2820", "#3b342a", "#484036", "#564e43", "#645c50", "#736b5e", "#837b6d", "#948b7d", "#a69d8f", "#b7aea0", "#c7bfb3", "#d6cec2", "#e5ded2", "#efe9dc", "#f7f2e6", "#fcf8ec", "#fffdf4"},
+		Font:    FontSpec{Recommended: "IBM Plex Mono", Fallback: []string{"JetBrains Mono", "Fira Code", "monospace"}, Ligatures: "off", Weight: 500, LineHeight: 1.45},
+		Border:  "minimal", IconSet: "auto", CadenceMs: 160, LineHeight: 1.45, Recommended: "IBM Plex Mono", Fallbacks: []string{"JetBrains Mono", "Fira Code", "monospace"},
+	},
+	{
+		Slug: "glacier-core-arctic-cyan", Name: "Glacier Core & Arctic Cyan", Mode: "dark",
+		Palette: []string{"#070c10", "#0c141a", "#111c24", "#172630", "#1f303c", "#283d4b", "#324b5b", "#3d596b", "#48697d", "#54798e", "#618aa0", "#6f9cb1", "#7fa9bd", "#90b6c9", "#a2c3d3", "#b4d0de", "#c6ddeb", "#d8eaf3", "#e8f4fa", "#f6fbff"},
+		Font:    FontSpec{Recommended: "JetBrains Mono", Fallback: []string{"Cascadia Code", "Geist Mono", "IBM Plex Mono", "monospace"}, Ligatures: "code-only", Weight: 400, LineHeight: 1.35},
+		Border:  "rounded", IconSet: "auto", CadenceMs: 90, LineHeight: 1.35, Recommended: "JetBrains Mono", Fallbacks: []string{"Cascadia Code", "Geist Mono", "monospace"},
+	},
+	{
+		Slug: "velvet-nebula-stellar-wine", Name: "Velvet Nebula & Stellar Wine", Mode: "dark",
+		Palette: []string{"#100509", "#1b0a10", "#25111a", "#301822", "#3d1f2d", "#4c2738", "#5c2f44", "#6d3851", "#7e425e", "#904d6c", "#a2577a", "#b46389", "#c77198", "#d882a8", "#e795b8", "#f0a8c8", "#f5b9d4", "#f9cbdf", "#fcdcea", "#fff0f5"},
+		Font:    FontSpec{Recommended: "Geist Mono", Fallback: []string{"JetBrains Mono", "Iosevka", "monospace"}, Ligatures: "off", Weight: 500, LineHeight: 1.40},
+		Border:  "rounded", IconSet: "auto", CadenceMs: 120, LineHeight: 1.40, Recommended: "Geist Mono", Fallbacks: []string{"JetBrains Mono", "Iosevka", "monospace"},
+	},
+	{
+		Slug: "koi-pond-tangerine-jade", Name: "Koi Pond & Tangerine Jade", Mode: "dark",
+		Palette: []string{"#060f0f", "#0b1a1a", "#101f20", "#162729", "#1e3034", "#273a40", "#32454d", "#3e515b", "#4a5e69", "#576b77", "#657885", "#748592", "#8495a3", "#94a5b4", "#a5b6c4", "#b7c8d4", "#c9d9e3", "#d9e9ef", "#e8f6fa", "#f5ffff"},
+		Font:    FontSpec{Recommended: "JetBrains Mono", Fallback: []string{"Fira Code", "Cascadia Code", "monospace"}, Ligatures: "code-only", Weight: 500, LineHeight: 1.35},
+		Border:  "rounded", IconSet: "auto", CadenceMs: 90, LineHeight: 1.35, Recommended: "JetBrains Mono", Fallbacks: []string{"Fira Code", "Cascadia Code", "monospace"},
+	},
+	{
+		Slug: "raven-oil-sheen", Name: "Raven Oil & Sheen", Mode: "dark",
+		Palette: []string{"#050607", "#0a0c0f", "#0f1217", "#151923", "#1c212e", "#232a3a", "#2c3447", "#364055", "#414d64", "#4d5b73", "#596a83", "#677a93", "#7689a4", "#8699b4", "#97a9c5", "#a8bcd6", "#bacce6", "#cddeef", "#deeefb", "#f0f8ff"},
+		Font:    FontSpec{Recommended: "Cascadia Code", Fallback: []string{"JetBrains Mono", "Fira Code", "monospace"}, Ligatures: "code-only", Weight: 400, LineHeight: 1.35},
+		Border:  "sharp", IconSet: "auto", CadenceMs: 90, LineHeight: 1.35, Recommended: "Cascadia Code", Fallbacks: []string{"JetBrains Mono", "Fira Code", "monospace"},
+	},
+	{
+		Slug: "lichen-quartz-petrified-coral", Name: "Lichen Quartz & Petrified Coral", Mode: "dark",
+		Palette: []string{"#0d0c0a", "#161411", "#1f1c18", "#292521", "#332f2a", "#3d3934", "#484540", "#545049", "#605c54", "#6d6960", "#7a766c", "#88847a", "#979288", "#a7a298", "#b7b3a8", "#c7c3b9", "#d7d4cb", "#e5e3da", "#efeee6", "#f8f7f0"},
+		Font:    FontSpec{Recommended: "IBM Plex Mono", Fallback: []string{"JetBrains Mono", "Cascadia Code", "monospace"}, Ligatures: "off", Weight: 500, LineHeight: 1.45},
+		Border:  "minimal", IconSet: "auto", CadenceMs: 160, LineHeight: 1.45, Recommended: "IBM Plex Mono", Fallbacks: []string{"JetBrains Mono", "Cascadia Code", "monospace"},
+	},
+	{
+		Slug: "midnight-circuit-emerald-pulse", Name: "Midnight Circuit & Emerald Pulse", Mode: "dark",
+		Palette: []string{"#040d09", "#08160f", "#0c1f16", "#11291d", "#173525", "#1e422e", "#265038", "#305e43", "#3a6c4f", "#457b5c", "#518a6a", "#5e9a7a", "#6ca88a", "#7bb799", "#8cc6a9", "#9fd5b9", "#b3e4c8", "#c8f2da", "#d9fae8", "#effff4"},
+		Font:    FontSpec{Recommended: "JetBrains Mono", Fallback: []string{"IBM Plex Mono", "Fira Code", "monospace"}, Ligatures: "code-only", Weight: 500, LineHeight: 1.35},
+		Border:  "sharp", IconSet: "auto", CadenceMs: 90, LineHeight: 1.35, Recommended: "JetBrains Mono", Fallbacks: []string{"IBM Plex Mono", "Fira Code", "monospace"},
+	},
+	{
+		Slug: "solar-drift-amber-horizon", Name: "Solar Drift & Amber Horizon", Mode: "dark",
+		Palette: []string{"#0f0805", "#1a0f08", "#25160c", "#301d12", "#3e2619", "#4d3020", "#5e3c28", "#6f4830", "#81553a", "#936344", "#a5724f", "#b7815b", "#c99068", "#d8a076", "#e6b085", "#f2c096", "#fad0a9", "#ffe3bd", "#ffedd2", "#fff8ec"},
+		Font:    FontSpec{Recommended: "Fira Code", Fallback: []string{"JetBrains Mono", "Iosevka", "monospace"}, Ligatures: "code-only", Weight: 500, LineHeight: 1.40},
+		Border:  "rounded", IconSet: "auto", CadenceMs: 90, LineHeight: 1.40, Recommended: "Fira Code", Fallbacks: []string{"JetBrains Mono", "Iosevka", "monospace"},
+	},
+	{
+		Slug: "garden-ink-parchment-day", Name: "Garden Ink & Parchment Day", Mode: "light",
+		Palette: []string{"#faf7ef", "#f4f1e6", "#edeade", "#e4e2d6", "#d5d3c6", "#c4c2b6", "#b3b1a5", "#a2a093", "#918f82", "#807e73", "#6f6e64", "#5e5d55", "#4e4d47", "#3f3e39", "#302f2c", "#232220", "#181716", "#0f0e0d", "#080807", "#000000"},
+		Font:    FontSpec{Recommended: "IBM Plex Mono", Fallback: []string{"JetBrains Mono", "Cascadia Code", "monospace"}, Ligatures: "off", Weight: 500, LineHeight: 1.45},
+		Border:  "rounded", IconSet: "auto", CadenceMs: 160, LineHeight: 1.45, Recommended: "IBM Plex Mono", Fallbacks: []string{"JetBrains Mono", "Cascadia Code", "monospace"},
+	},
 }
 
 var currentSlug = "volcanic-ember-glacial-slate"
@@ -363,8 +447,6 @@ func borderColor(name string) lipgloss.Color {
 		return lipgloss.Color(currentTheme.statusBg)
 	}
 }
-
-const spinnerFrames = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"
 
 func readableSize(n int) string {
 	switch {

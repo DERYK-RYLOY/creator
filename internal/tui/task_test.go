@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/creatorcli/creator/internal/store"
+	"github.com/DERYK-RYLOY/creator/internal/store"
 )
 
 func TestTaskViewRendersChecklist(t *testing.T) {

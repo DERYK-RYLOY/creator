@@ -6,7 +6,7 @@ import (
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/creatorcli/creator/internal/store"
+	"github.com/DERYK-RYLOY/creator/internal/store"
 )
 
 type taskBook struct {
@@ -276,7 +276,7 @@ func (m *model) handleTaskListKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 func (m *model) taskView(w, h int) string {
 	rows := m.filteredTaskBooks()
 	lines := []string{
-		orange.Bold(true).Render("to do"),
+		dynStyle{name: "cream", bold: true}.Render("to do"),
 		faint.Render("type to filter · ↑/↓ select · enter inspect · esc back"),
 	}
 	if strings.TrimSpace(m.overlayQuery) != "" {

@@ -1,27 +1,42 @@
-// braille.go — the floating braille core in the status corner.
+// braille.go — the floating braille core: corner widget + welcome hero.
 //
 // The widget renders the CREATOR wordmark from a bitmask baked into the
 // binary (see wordmark_data.go) — no files, no network, no goroutines.
 // View() stays a pure function of (animT, morph).
 //
-// The motion is a faithful port of the shipped design
-// (creator_braille_surge_live.html): dots are spring masses on their home
-// positions, and "energy fronts" — expanding rings from the wordmark's core
-// — sweep outward on a 3.0 s heartbeat (k=120, damp=10.5, radial + 10% swirl
-// kick, gaussian window). Presence NEVER changes: every mask dot stays in
-// its letterform and the ring speaks through brightness and micro- puff
-// displacement only. That is what keeps the word readable while the water
-// moves through it. Bubbles rise through the open lattice at the crest —
-// the "floating water bubble" of the design.
+// The motion model, refined from the original surge design:
 //
-// Colors come from the active theme ramp (muted -> thinking -> fg -> accent1)
-// keyed by theme slug, rebuilt on theme switch, with accent2 for bubbles.
+//   - Depth planes. Every lattice dot carries a smooth pseudo-depth from a
+//     layered sine field. Deep planes drift on a phase-shifted clock, puff
+//     less under the energy front and render dimmer, so the whole mark reads
+//     as a volumetric object suspended in water instead of a flat decal.
+//   - Natural tide. Idle drift is a smooth vector field (not per-dot white
+//     noise), so the letters sway like something buoyant, and the brightness
+//     breathes outward from the core as a slow radial tide.
+//   - Caustics. Two interfering filaments of light (pow-sharpened product of
+//     orthogonal sine waves) slide across the mark — the dancing bands you
+//     see at the bottom of a pool. Present even at rest; flood when thinking.
+//   - Energy fronts (heartbeat). Expanding rings still sweep the word every
+//     3 s (k=120, damp=10.5, radial + 10% swirl kick, gaussian window) — but
+//     now depth scales the displacement and the leading edge rides a hotter
+//     color ramp, so fronts move *through* the volume, not over it.
+//   - Comet. Once per heartbeat a narrow gaussian glare travels the mark
+//     left→right (alternating direction), white-heating the dots it crosses.
+//   - Sparkles. Rare lattice points flare and decay exponentially while the
+//     agent thinks — like glitter catching a passing beam.
+//   - Bubbles. Rising water dots with a two-cell fading wake trail.
+//
+// Presence NEVER changes: mask dots keep their letterforms and every effect
+// speaks through brightness and micro-displacement only. The word stays
+// readable at every frame, exactly like the design it refines.
 //
 // Never-breaks guarantees:
-//   - fixed-size arrays, bounded loops (rings: 2, bubbles: 4), no allocation
-//     in the hot path, no I/O, no goroutines
+//   - fixed-size arrays, bounded loops (rings: 2, bubbles: 4), no goroutines,
+//     no I/O after decode (once, fail-safe)
 //   - decode failure / tiny terminal -> empty widget, caller falls back
 //   - all intensity and displacement values clamped before use
+//   - sparkles/comet use closed-form envelopes of (t mod period) — no RNG
+//     state, no per-frame allocation in the hot path beyond the builder
 package tui
 
 import (
@@ -43,20 +58,20 @@ const (
 	srcMaskH    = 96  // source mask height in dots
 	srcRowBytes = srcMaskW / 8
 
-	// box-sample coverage required to keep a dot — tuned on the shipped
-	// cutout so stroke structure survives the downscale
-	widgetKeep = 0.42
+	// box-sample coverage required to keep a dot — stroke structure must
+	// survive the downscale; 0.34 keeps the letters full without smearing
+	widgetKeep = 0.34
 )
 
-// ---------- wave physics, ported from creator_braille_surge_live.html ----------
+// ---------- wave physics ----------
 
 const (
-	heartbeat = 3.0  // s between energy fronts (HTML: nextBeatAt = t + 3.0)
+	heartbeat = 3.0  // s between energy fronts
 	ringSpeed = 38.0 // widget dots/s (scaled from HTML 1280 px/s on 600 dots)
-	ringSig   = 6.0  // gaussian window width in dots (scaled from HTML sig=95)
+	ringSig   = 6.0  // gaussian window width in dots
 	ringDecay = 0.52 // front amp *= exp(-dt*0.52), verbatim
 	kickAmp   = 2.2  // max outward puff in dots at window peak
-	springD   = 5.25 // damp/2 — spring envelope decay (k=120, damp=10.5)
+	springD   = 5.25 // damp/2 — spring envelope decay
 	springW   = 9.61 // sqrt(k - (damp/2)^2) — damped natural frequency
 )
 
@@ -138,12 +153,6 @@ func widgetMask() [widgetDotH][widgetDotW]bool {
 				if sum/float64((sy1-sy0)*(sx1-sx0)) <= widgetKeep {
 					continue
 				}
-				// Lite-half (the locked corner-scale decision): every dot's
-				// twin is dropped so dots read as individual points with
-				// open water between them — the letters stay legible.
-				if (dx+dy)%2 == 1 {
-					continue
-				}
 				scaledMask[dy][dx] = true
 			}
 		}
@@ -152,10 +161,10 @@ func widgetMask() [widgetDotH][widgetDotW]bool {
 }
 
 // ---------- color ramp from the active theme ----------
-// muted -> thinking -> fg -> accent1 (glacial -> warm -> ember), plus
-// accent2 for bubbles. Keyed on the theme slug; rebuilt on theme switch.
+// muted -> thinking -> fg -> accent1, with a molten near-white tip for the
+// comet glare. Keyed on the theme slug; rebuilt on theme switch.
 
-const rampLevels = 48
+const rampLevels = 64
 
 var (
 	rampCache     [rampLevels]lipgloss.Style
@@ -227,20 +236,23 @@ func rampColor(q float64) lipgloss.Color {
 	if q <= 0 {
 		return lipgloss.Color(currentTheme.muted)
 	}
-	if q >= 1 {
-		return lipgloss.Color(currentTheme.accent1)
-	}
 	m := parseHex(currentTheme.muted, [3]uint8{80, 80, 90})
 	th := parseHex(currentTheme.thinking, [3]uint8{120, 140, 150})
 	fg := parseHex(currentTheme.fg, [3]uint8{220, 220, 220})
 	a1 := parseHex(currentTheme.accent1, [3]uint8{238, 143, 43})
+	hot := lerpRGB(a1, [3]uint8{255, 244, 234}, 0.62)
 	switch {
-	case q < 0.38:
-		return lipgloss.Color(hexStr(lerpRGB(m, th, q/0.38)))
-	case q < 0.68:
-		return lipgloss.Color(hexStr(lerpRGB(th, fg, (q-0.38)/0.30)))
+	case q < 0.30:
+		return lipgloss.Color(hexStr(lerpRGB(m, th, q/0.30)))
+	case q < 0.55:
+		return lipgloss.Color(hexStr(lerpRGB(th, fg, (q-0.30)/0.25)))
+	case q < 0.78:
+		return lipgloss.Color(hexStr(lerpRGB(fg, a1, (q-0.55)/0.23)))
 	default:
-		return lipgloss.Color(hexStr(lerpRGB(fg, a1, (q-0.68)/0.32)))
+		if q > 1 {
+			q = 1
+		}
+		return lipgloss.Color(hexStr(lerpRGB(a1, hot, (q-0.78)/0.22)))
 	}
 }
 
@@ -269,13 +281,70 @@ func hashPhase(x, y int) float64 {
 	return float64(v%1000) / 1000.0
 }
 
-// dotState computes one dot's displacement and brightness.
-// morph: 0 = idle calm, 1 = thinking water. The result is the port of the
-// live page: ember base breathing, then energy-front glow + radial spring
-// puff on top.
-func dotState(x, y int, phase float64, t, morph float64) (xOff, yOff, bright float64) {
-	dx := float64(x) - float64(widgetDotW-1)/2
-	dy := float64(y) - float64(widgetDotH-1)/2
+// depthOf returns a smooth pseudo-depth in [0.60, 1.0]. Layered sines give a
+// coherent field (near planes cluster, far planes cluster) rather than
+// per-dot white noise — that is what makes the parallax read as volume.
+func depthOf(x, y, w, h int) float64 {
+	fx := float64(x) / float64(w) * math.Pi * 2
+	fy := float64(y) / float64(h) * math.Pi * 2
+	n := math.Sin(fx*1.7+math.Cos(fy*1.3+0.6)*1.25) * 0.52
+	n += math.Sin(fy*2.35+fx*0.85+1.7) * 0.31
+	n += math.Cos(fx*3.15-fy*2.6+0.4) * 0.17
+	return 0.60 + 0.40*clamp01(n*0.5+0.5)
+}
+
+// caustic is the interplay of two orthogonal light filaments. pow-sharpened
+// so the bands are narrow, bright threads rather than a wash.
+func caustic(x, y int, t float64) float64 {
+	fx, fy := float64(x), float64(y)
+	a := math.Sin(fx*0.155 + t*0.52 + math.Sin(fy*0.21-t*0.37)*1.65)
+	b := math.Sin(fy*0.185 - t*0.33 + math.Sin(fx*0.12+t*0.45)*1.5)
+	c := a * b
+	return clamp01(math.Pow(math.Abs(c), 3.2))
+}
+
+// cometGlow sweeps one narrow gaussian glare across the field once per
+// heartbeat, alternating direction. Returns 0 most of the time; peaks at
+// ~1.0 at the leading edge and fades linearly to 0 as the pass completes.
+func cometGlow(x, w int, t float64) float64 {
+	beat := math.Floor(t / heartbeat)
+	phase := math.Mod(t, heartbeat) / 1.35 // crossing takes 1.35s
+	if phase >= 1 {
+		return 0
+	}
+	span := float64(w) + 90
+	var pos float64
+	if int64(beat)%2 == 0 {
+		pos = phase*span - 45
+	} else {
+		pos = float64(w) + 45 - phase*span
+	}
+	d := float64(x) - pos
+	return math.Exp(-(d*d)/(2*8.5*8.5)) * (1 - phase)
+}
+
+// sparkle flares rare lattice points for ~0.45 s with exponential decay.
+// Slot assignment is hashed off the heartbeat so flashes never synchronize.
+func sparkle(x, y int, t float64) float64 {
+	h := hashPhase(x*3+17, y*5+29)
+	if h < 0.845 {
+		return 0
+	}
+	dt := math.Mod(t+h*7.31, heartbeat)
+	if dt > 0.45 {
+		return 0
+	}
+	return math.Exp(-dt*9.5) * (0.72 + 0.28*math.Sin(t*38+h*29))
+}
+
+// dotState computes one dot's displacement and brightness for a field of
+// (fieldW x fieldH) dots. Ring speed is scaled from the widget reference so
+// the same heartbeat reads on any scale.
+func dotState(x, y, fieldW, fieldH int, t, morph float64) (xOff, yOff, bright float64) {
+	cx := float64(fieldW-1) / 2
+	cy := float64(fieldH-1) / 2
+	dx := float64(x) - cx
+	dy := float64(y) - cy
 	d := math.Sqrt(dx*dx + dy*dy)
 	var dirx, diry float64
 	if d > 0.5 {
@@ -285,17 +354,25 @@ func dotState(x, y int, phase float64, t, morph float64) (xOff, yOff, bright flo
 	} else {
 		d = 0
 	}
-	// 10% tangential swirl, verbatim from the HTML:
-	// ax += -diry*kick*0.10; ay += dirx*kick*0.10
+	depth := depthOf(x, y, fieldW, fieldH)
+
+	unit := float64(fieldW) / float64(widgetDotW) // ring speed follows field scale
+	spd := ringSpeed * unit
+
+	// 10% tangential swirl around the outward kick
 	swx := -diry * 0.10
 	swy := dirx * 0.10
 
-	// idle: HTML idle shimmer (sin(t*1.35)+cos(t*1.12)) — sub-lattice, so at
-	// rest the letters stay PUT and only brightness breathes
-	idleX := 0.15 * math.Sin(t*1.35+phase*6.283)
-	idleY := 0.15 * math.Cos(t*1.12+phase*1.7*6.283-1.1)
-	// HTML ember base: 0.52 + 0.09*sin(t*2.094) — heartbeat-synced pulse
-	idleBright := 0.50 + 0.20*math.Sin(t*0.40+phase*6.283+1.7)
+	ph := hashPhase(x, y)
+	// idle drift: smooth vector field, depth-shifted — buoyant, not jittery
+	fx := float64(x) * 0.24
+	fy := float64(y) * 0.31
+	idleX := 0.23*math.Sin(t*0.42+fy*1.15+depth*2.2) + 0.07*math.Sin(t*0.9+ph*6.28)
+	idleY := 0.20*math.Cos(t*0.36+fx*1.05-depth*1.8) + 0.06*math.Cos(t*0.8+ph*4.1+1.3)
+	// breathing tide rolls outward from the core — the "water moving through
+	// the letters" feel, synced in period with the heartbeat
+	tide := math.Sin(t*0.62-d*(0.115/math.Max(unit, 0.6))+0.9) * 0.12
+	idleBright := 0.585 + tide + 0.065*math.Sin(t*0.9+ph*6.28+1.7)
 
 	// energy fronts: two most recent heartbeat rings, closed form
 	glow := 0.0
@@ -311,30 +388,40 @@ func dotState(x, y int, phase float64, t, morph float64) (xOff, yOff, bright flo
 		if amp < 0.02 {
 			continue
 		}
-		r := 4.0 + ringSpeed*u       // ring radius from just inside the core
-		off := (d - r) / ringSig     // dot distance vs ring front
-		if off > 2.4 || off < -2.4 { // HTML window cutoff
+		r := 4.0 + spd*u // ring radius from just inside the core
+		off := (d - r) / ringSig
+		if off > 2.4 || off < -2.4 { // gaussian window cutoff
 			continue
 		}
 		w := math.Exp(-off*off) * amp
 		glow += w
-		// spring puff: ring reached this dot at
-		uA := u - (d-4.0)/ringSpeed
+		// spring puff: ring reached this dot at uA
+		uA := u - (d-4.0)/spd
 		if uA <= 0 || uA >= 1.2 {
 			continue
 		}
-		ampA := math.Exp(-ringDecay * ((d - 4.0) / ringSpeed)) // amp at arrival
+		ampA := math.Exp(-ringDecay * ((d - 4.0) / spd)) // amp at arrival
 		env := kickAmp * ampA * math.Exp(-springD*uA) * math.Sin(springW*uA)
-		puffX = math.Max(puffX, env*(dirx+swx))
-		puffY = math.Max(puffY, env*(diry+swy))
-
+		puffScale := 0.55 + 0.45*depth // shallow planes ride the front, deep planes brace
+		puffX = math.Max(puffX, env*(dirx+swx)*puffScale)
+		puffY = math.Max(puffY, env*(diry+swy)*puffScale)
 	}
-	waveBright := (0.52+0.09*math.Sin(t*2.094))*0.62 + math.Min(1.35, glow*1.1)*0.85
+
+	caus := caustic(x, y, t) * (0.10 + 0.15*clamp01(morph))
+	comet := cometGlow(x, fieldW, t) * (0.45 + 0.55*clamp01(morph))
+	spark := 0.0
+	if morph > 0.35 {
+		spark = sparkle(x, y, t) * clamp01((morph-0.35)/0.65)
+	}
+
+	waveBright := (0.50+0.10*math.Sin(t*2.094))*0.50 + math.Min(1.35, glow*1.15)*0.88 + comet*0.72 + caus + spark*0.95
 
 	blend := clamp01(morph)
-	xOff = (idleX*(1-blend) + puffX*blend)
-	yOff = (idleY*(1-blend) + puffY*blend)
+	xOff = idleX*(1-blend) + puffX*blend
+	yOff = idleY*(1-blend) + puffY*blend
 	bright = idleBright*(1-blend) + clamp01(waveBright)*blend
+	// depth parallax shading: far planes sit lower in the water
+	bright *= 0.72 + 0.28*depth
 	if bright < 0.06 {
 		bright = 0.06
 	}
@@ -362,67 +449,56 @@ var brailleBit = [4][2]uint8{{0x01, 0x08}, {0x02, 0x10}, {0x04, 0x20}, {0x40, 0x
 // bubbleCount bubbles rise through the crest while thinking
 const bubbleCount = 4
 
-// renderBrailleWidget renders the widget string. Returns "" whenever the
-// widget cannot render (decode failure, too small for the terminal) so the
-// caller can fall back to the plain status line.
+// renderBrailleWidget renders the corner widget string. Returns "" whenever
+// the widget cannot render (decode failure, too small for the terminal) so
+// the caller can fall back to the plain status line.
 func renderBrailleWidget(t, morph float64) string {
 	mask := widgetMask()
-	var (
-		grid  [widgetDotH][widgetDotW]float64 // sub-dot brightness (presence-driven)
-		cellQ [widgetDotH][widgetDotW]float64 // color heat per lattice point
-	)
-	// wordmark dots: presence is fixed by the mask; rings move brightness
+	grid, cellQ := newDotGrid(widgetDotH, widgetDotW)
+	// wordmark dots: presence is fixed by the mask; the fronts move light
 	for y := 0; y < widgetDotH; y++ {
 		for x := 0; x < widgetDotW; x++ {
 			if !mask[y][x] {
 				continue
 			}
-			ph := hashPhase(x, y)
-			xOff, yOff, bright := dotState(x, y, ph, t, morph)
+			xOff, yOff, bright := dotState(x, y, widgetDotW, widgetDotH, t, morph)
 			ix := clampInt(int(float64(x)+xOff+0.5), 0, widgetDotW-1)
 			iy := clampInt(int(float64(y)+yOff+0.5), 0, widgetDotH-1)
 			if grid[iy][ix] < bright {
-				grid[iy][ix] = bright // max-merge: one dot = one point, never a pile-up
+				grid[iy][ix] = bright // max-merge: one dot = one point
 				cellQ[iy][ix] = bright
 			}
 		}
 	}
-	// bubbles: rising water dots through the open lattice at the crest.
-	// Each bubble detaches shortly after the energy ring passes beneath
-	// it (per-bubble hash offset), rises through the letters, and pops.
+	// bubbles with a two-cell fading wake
 	if morph > 0.5 {
-		for i := 0; i < bubbleCount; i++ {
-			h1 := hashPhase(i*37+11, i*91+7)
-			h2 := hashPhase(i*13+5, i*7+3)
-			xb := 8.0 + h1*float64(widgetDotW-16)
-			db := math.Abs(xb - float64(widgetDotW-1)/2) // distance from core
-			uArr := (db - 4.0) / ringSpeed               // ring arrival time
-			u := math.Mod(t, heartbeat) - uArr - (0.06 + 0.08*h2)
-			if u < 0.02 || u > 1.05 {
-				continue
-			}
-			life := u / 0.95
-			yTop := 6.0 - life*6.0
-			iyb := clampInt(int(yTop+0.5), 0, widgetDotH-1)
-			wob := 0.35 * math.Sin(t*2.2+float64(i)*2.1)
-			ixb := clampInt(int(xb+wob+0.5), 0, widgetDotW-1)
-			fade := math.Min(life*6, 1.0) * (1.0 - math.Max(0, (life-0.70)/0.30))
-			if fade <= 0 {
-				continue
-			}
-			if grid[iyb][ixb] <= 0.15 {
-				grid[iyb][ixb] = 0.62 * fade
-				cellQ[iyb][ixb] = 0.66
-			}
-		}
+		placeBubbles2(grid, cellQ, t, morph, widgetDotW, widgetDotH)
 	}
 	// encode to braille cells — one style per cell from the hottest sub-dot
+	return encodeDotField(grid, cellQ, widgetDotW, widgetDotH, widgetCols, widgetRows)
+}
+
+// newDotGrid allocates the brightness/heat lattices for one frame.
+func newDotGrid(h, w int) (grid, cellQ [][]float64) {
+	grid = make([][]float64, h)
+	cellQ = make([][]float64, h)
+	for y := 0; y < h; y++ {
+		grid[y] = make([]float64, w)
+		cellQ[y] = make([]float64, w)
+	}
+	return grid, cellQ
+}
+
+// encodeDotField encodes a dot lattice into braille cells, one style per
+// cell from the hottest sub-dot.
+func encodeDotField(grid, cellQ [][]float64, fieldW, fieldH, cellCols, cellRows int) string {
 	var sb strings.Builder
-	for cy := 0; cy < widgetRows; cy++ {
+	sb.Grow(cellCols*cellRows*8 + cellRows)
+	for cy := 0; cy < cellRows; cy++ {
 		if cy > 0 {
 			sb.WriteByte('\n')
 		}
-		for cx := 0; cx < widgetCols; cx++ {
+		for cx := 0; cx < cellCols; cx++ {
 			bits := 0
 			bright, q := 0.0, 0.0
 			for dyi := 0; dyi < 4; dyi++ {
@@ -445,10 +521,63 @@ func renderBrailleWidget(t, morph float64) string {
 				sb.WriteRune(rune(0x2800)) // open water
 				continue
 			}
-			sb.WriteString(rampStyle(clamp01(q)).Render(string(rune(0x2800 + bits))))
+			// gamma push: mid-brightness sits in the cool bands of the ramp
+			// so comets and sparks detonate instead of the whole word glowing
+			hot := math.Pow(clamp01(q), 1.4)
+			sb.WriteString(rampStyle(hot).Render(string(rune(0x2800 + bits))))
 		}
 	}
 	return sb.String()
+}
+
+// placeBubbles2 drops rising bubbles and their fading wake into grid/cellQ.
+// Each bubble detaches shortly after the energy ring passes beneath it; the
+// wake below a live bubble holds 0.38 / 0.16 of the bubble's brightness and
+// fades in step with it.
+func placeBubbles2(grid, cellQ [][]float64, t, morph float64, fieldW, fieldH int) {
+	unit := float64(fieldW) / float64(widgetDotW)
+	spd := ringSpeed * unit
+	for i := 0; i < bubbleCount; i++ {
+		h1 := hashPhase(i*37+11, i*91+7)
+		h2 := hashPhase(i*13+5, i*7+3)
+		xb := 8.0*unit + h1*float64(float64(fieldW)-16*unit)
+		dcx := math.Abs(xb - float64(fieldW-1)/2) // distance from core
+		uArr := (dcx - 4.0) / spd                 // ring arrival time
+		u := math.Mod(t, heartbeat) - uArr - (0.06 + 0.08*h2)
+		if u < 0.02 || u > 1.05 {
+			continue
+		}
+		life := u / 0.95
+		yTop := 6.0*unit - life*6.0*unit
+		iyb := clampInt(int(yTop+0.5), 0, fieldH-1)
+		wob := 0.35 * math.Sin(t*2.2+float64(i)*2.1)
+		ixb := clampInt(int(xb+wob+0.5), 0, fieldW-1)
+		fade := math.Min(life*6, 1.0) * (1.0 - math.Max(0, (life-0.70)/0.30))
+		if fade <= 0 {
+			continue
+		}
+		const wake = 3
+		for k := 0; k < wake; k++ {
+			yy := iyb + k
+			if yy >= fieldH {
+				break
+			}
+			scale := 1.0
+			val := 0.62 * fade
+			if k > 0 {
+				scale = []float64{0.38, 0.16}[k-1]
+				val = 0.62 * fade * scale
+			}
+			if grid[yy][ixb] <= 0.15 {
+				grid[yy][ixb] = val
+				if k == 0 {
+					cellQ[yy][ixb] = 0.72
+				} else {
+					cellQ[yy][ixb] = 0.55
+				}
+			}
+		}
+	}
 }
 
 // brailleCornerWidget is the public entry the view calls. Pure function of

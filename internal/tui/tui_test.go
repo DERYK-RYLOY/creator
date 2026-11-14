@@ -8,6 +8,8 @@ import (
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
+
+	"github.com/DERYK-RYLOY/creator/internal/buildinfo"
 )
 
 func TestFilterCommandsMatchesAndDefaults(t *testing.T) {
@@ -77,7 +79,7 @@ func TestReadableSize(t *testing.T) {
 }
 
 func TestViewRendersInputAndPalette(t *testing.T) {
-	m := &model{width: 120, height: 34, cwd: t.TempDir(), opts: options{Provider: "anthropic", Model: "claude-sonnet-4-5", Version: version}, historyIdx: 0}
+	m := &model{width: 120, height: 34, cwd: t.TempDir(), opts: options{Provider: "anthropic", Model: "claude-sonnet-4-5", Version: buildinfo.Version}, historyIdx: 0}
 	got := m.View()
 	if !strings.Contains(got, "❯") {
 		t.Fatalf("view missing prompt:\n%s", got)
@@ -94,8 +96,8 @@ func TestViewRendersInputAndPalette(t *testing.T) {
 func TestMouseWheelScrolls(t *testing.T) {
 	m := &model{scroll: 0}
 	m.handleMouse(tea.MouseMsg{Button: tea.MouseButtonWheelUp, Action: tea.MouseActionPress})
-	if m.scroll != 2 {
-		t.Fatalf("wheel up should scroll by 2, got %d", m.scroll)
+	if m.scroll != 3 {
+		t.Fatalf("wheel up should scroll by 3, got %d", m.scroll)
 	}
 	m.handleMouse(tea.MouseMsg{Button: tea.MouseButtonWheelDown, Action: tea.MouseActionPress})
 	if m.scroll != 0 {
@@ -105,7 +107,7 @@ func TestMouseWheelScrolls(t *testing.T) {
 
 func TestToolBoxRendersMinimalBox(t *testing.T) {
 	b := block{kind: kindTool, title: "shell", body: `{"command":"go test ./..."}`, running: true, at: time.Now().Add(-time.Second), bytes: 2048, tail: "ok github.com/example/app"}
-	lines := renderBlockZen(b, 80)
+	lines := renderBlockZen(b, 80, nil)
 	out := strings.Join(lines, "\n")
 	for _, want := range []string{"┌", "┘", "shell", "running", "go test ./...", "ok github.com/example/app"} {
 		if !strings.Contains(out, want) {
@@ -116,13 +118,16 @@ func TestToolBoxRendersMinimalBox(t *testing.T) {
 
 func TestMouseLeftClickExpandsLatestToolBlock(t *testing.T) {
 	m := &model{width: 80, height: 40, transcript: []block{{kind: kindTool, title: "write", body: `{"path":"x.go","content":"package x"}`}}}
-	m.handleMouse(tea.MouseMsg{Button: tea.MouseButtonLeft, Action: tea.MouseActionPress})
-	m.handleMouse(tea.MouseMsg{Button: tea.MouseButtonLeft, Action: tea.MouseActionRelease})
+	// screen row 0 is the header — body rows start at row 1
+	press := tea.MouseMsg{Button: tea.MouseButtonLeft, Action: tea.MouseActionPress, Y: 1}
+	release := tea.MouseMsg{Button: tea.MouseButtonLeft, Action: tea.MouseActionRelease, Y: 1}
+	m.handleMouse(press)
+	m.handleMouse(release)
 	if !m.transcript[0].expanded {
 		t.Fatal("left click should expand latest tool box")
 	}
-	m.handleMouse(tea.MouseMsg{Button: tea.MouseButtonLeft, Action: tea.MouseActionPress})
-	m.handleMouse(tea.MouseMsg{Button: tea.MouseButtonLeft, Action: tea.MouseActionRelease})
+	m.handleMouse(press)
+	m.handleMouse(release)
 	if m.transcript[0].expanded {
 		t.Fatal("left click should collapse again")
 	}
@@ -130,20 +135,22 @@ func TestMouseLeftClickExpandsLatestToolBlock(t *testing.T) {
 
 func TestMouseClickOnlyTogglesOnPressAndHitsExactBlock(t *testing.T) {
 	m := &model{width: 80, height: 40, transcript: []block{{kind: kindThinking, streaming: true}, {kind: kindAssistant, body: "answer"}, {kind: kindCommand, title: "cmd", body: "out"}}}
-	m.handleMouse(tea.MouseMsg{Button: tea.MouseButtonLeft, Action: tea.MouseActionRelease})
+	press1 := tea.MouseMsg{Button: tea.MouseButtonLeft, Action: tea.MouseActionPress, Y: 1}
+	release1 := tea.MouseMsg{Button: tea.MouseButtonLeft, Action: tea.MouseActionRelease, Y: 1}
+	m.handleMouse(tea.MouseMsg{Button: tea.MouseButtonLeft, Action: tea.MouseActionRelease, Y: 1})
 	if m.transcript[2].expanded {
 		t.Fatal("release events must not toggle a box")
 	}
-	m.handleMouse(tea.MouseMsg{Button: tea.MouseButtonLeft, Action: tea.MouseActionPress})
-	m.handleMouse(tea.MouseMsg{Button: tea.MouseButtonLeft, Action: tea.MouseActionRelease})
+	m.handleMouse(press1)
+	m.handleMouse(release1)
 	if !m.transcript[0].expanded {
-		t.Fatal("y=0 should hit the first block")
+		t.Fatal("y=1 should hit the first block")
 	}
 	if m.transcript[2].expanded {
 		t.Fatal("y=0 must not toggle a later block")
 	}
-	m.handleMouse(tea.MouseMsg{Button: tea.MouseButtonLeft, Action: tea.MouseActionPress})
-	m.handleMouse(tea.MouseMsg{Button: tea.MouseButtonLeft, Action: tea.MouseActionRelease})
+	m.handleMouse(press1)
+	m.handleMouse(release1)
 	if m.transcript[0].expanded {
 		t.Fatal("a second press should collapse the same block")
 	}

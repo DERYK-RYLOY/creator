@@ -9,14 +9,14 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/creatorcli/creator/internal/config"
+	"github.com/DERYK-RYLOY/creator/internal/buildinfo"
+	"github.com/DERYK-RYLOY/creator/internal/config"
 )
-
-const version = "0.1.0"
 
 // Run starts mission control. args are the arguments after `creator tui`.
 func Run(ctx context.Context, args []string, stdout, stderr io.Writer) error {
@@ -39,9 +39,9 @@ func Run(ctx context.Context, args []string, stdout, stderr io.Writer) error {
 		return &ExitError{Code: 2}
 	}
 	_ = opts
-	opts.Version = version
+	opts.Version = buildinfo.Version
 	if *ver {
-		fmt.Fprintf(stdout, "creator-tui %s\n", version)
+		fmt.Fprintf(stdout, "creator-tui %s\n", buildinfo.Version)
 		return nil
 	}
 
@@ -65,7 +65,8 @@ func Run(ctx context.Context, args []string, stdout, stderr io.Writer) error {
 	}
 	opts.Policy = normalizePolicy(opts.Policy, opts.AllowCritical)
 
-	m := &model{opts: opts, exe: exe, cwd: mustGetwd(), approval: policyToApproval(opts.Policy), historyIdx: 0}
+	cwd := mustGetwd()
+	m := &model{opts: opts, exe: exe, cwd: cwd, approval: policyToApproval(opts.Policy), historyIdx: 0, gitBranch: detectGitBranch(cwd)}
 	if invalidTheme {
 		m.notice = "unknown theme slug; using " + CurrentThemeSlug()
 		m.transcript = append(m.transcript, block{kind: kindNotice, title: "theme", body: "unknown theme slug; using " + CurrentThemeSlug(), ok: false, at: time.Now()})
@@ -105,6 +106,22 @@ func mustGetwd() string {
 		return "."
 	}
 	return wd
+}
+
+// detectGitBranch reads the branch name from .git/HEAD once at startup.
+// Returns "" when cwd is not a repository or HEAD is detached/unreadable.
+// Startup-only, so View() never touches the disk.
+func detectGitBranch(dir string) string {
+	data, err := os.ReadFile(filepath.Join(dir, ".git", "HEAD"))
+	if err != nil {
+		return ""
+	}
+	s := strings.TrimSpace(string(data))
+	const ref = "ref: refs/heads/"
+	if strings.HasPrefix(s, ref) {
+		return strings.TrimPrefix(s, ref)
+	}
+	return "detached"
 }
 
 func discoverEngine(override string) (string, error) {

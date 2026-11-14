@@ -3,8 +3,8 @@ package tui
 import (
 	"testing"
 
-	"github.com/creatorcli/creator/internal/provider"
-	"github.com/creatorcli/creator/internal/store"
+	"github.com/DERYK-RYLOY/creator/internal/provider"
+	"github.com/DERYK-RYLOY/creator/internal/store"
 )
 
 func TestAttachSessionRestoresTranscriptAndActiveModel(t *testing.T) {

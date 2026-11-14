@@ -7,7 +7,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/creatorcli/creator/internal/config"
+	"github.com/DERYK-RYLOY/creator/internal/config"
 )
 
 func TestThemeOverlaySelectPersistsToConfig(t *testing.T) {

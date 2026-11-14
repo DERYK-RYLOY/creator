@@ -9,8 +9,8 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/creatorcli/creator/internal/config"
-	"github.com/creatorcli/creator/internal/provider"
+	"github.com/DERYK-RYLOY/creator/internal/config"
+	"github.com/DERYK-RYLOY/creator/internal/provider"
 )
 
 const providerScreenFooterHeight = 3
@@ -41,6 +41,8 @@ func (m *model) handleOverlayKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m.handleTaskListKey(msg)
 	case overlayTheme:
 		return m.handleThemeListKey(msg)
+	case overlayHelp:
+		return m.handleHelpKey(msg)
 	default:
 		m.overlay = overlayNone
 		return m, nil
@@ -459,6 +461,8 @@ func (m *model) overlayView(w, h int) string {
 		return m.taskView(w, h)
 	case overlayTheme:
 		return m.themeView(w, h)
+	case overlayHelp:
+		return m.helpView(w, h)
 	default:
 		return m.providersView(w, h)
 	}
@@ -467,7 +471,7 @@ func (m *model) overlayView(w, h int) string {
 func (m *model) providersView(w, h int) string {
 	items := m.filteredProviders()
 	lines := []string{
-		orange.Bold(true).Render("providers"),
+		sectionTitle("providers"),
 		faint.Render("type to filter · ↑/↓ scroll · enter connect · esc back"),
 	}
 	if q := strings.TrimSpace(m.overlayQuery); q != "" {
@@ -527,7 +531,7 @@ func (m *model) providersView(w, h int) string {
 func (m *model) providerKeyView(w, h int) string {
 	d := m.pendingProvider
 	lines := []string{
-		orange.Bold(true).Render("connect · " + d.Name),
+		sectionTitle("connect · " + d.Name),
 		faint.Render("doc: " + d.Docs),
 	}
 	if d.Local {
@@ -568,7 +572,7 @@ func (m *model) providerKeyView(w, h int) string {
 
 func (m *model) modelsView(w, h int) string {
 	lines := []string{
-		orange.Bold(true).Render("models · free only"),
+		sectionTitle("models · free only"),
 		faint.Render("/filter: type · ↑/↓ scroll · enter select · esc back"),
 	}
 	if strings.TrimSpace(m.overlayQuery) != "" {

@@ -6,7 +6,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/creatorcli/creator/internal/provider"
+	"github.com/DERYK-RYLOY/creator/internal/provider"
 )
 
 func TestFilteredProvidersFindsGoogle(t *testing.T) {

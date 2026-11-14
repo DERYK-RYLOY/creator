@@ -15,7 +15,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/creatorcli/creator/internal/provider"
+	"github.com/DERYK-RYLOY/creator/internal/provider"
 )
 
 type tickMsg struct{ at time.Time }
@@ -30,7 +30,7 @@ type commandDoneMsg struct {
 
 func (m *model) Init() tea.Cmd {
 	m.lastTick = time.Now()
-	return tick(900 * time.Millisecond)
+	return tick(110 * time.Millisecond)
 }
 
 func tick(d time.Duration) tea.Cmd {
@@ -41,6 +41,10 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.width, m.height = msg.Width, msg.Height
+		if !m.sidebarTouched {
+			m.sidebar = msg.Width >= 120 && msg.Height >= 24
+		}
+		m.clampScroll()
 		return m, nil
 	case tickMsg:
 		now := msg.at
@@ -69,13 +73,12 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.morph = 0
 			}
 		}
-		interval := 900 * time.Millisecond
+		interval := 110 * time.Millisecond
 		if m.running {
 			interval = 70 * time.Millisecond
 		}
 		if diff := target - m.morph; diff > 0.001 || diff < -0.001 {
-			// mid-morph: fast cadence so the ease stays smooth even when
-			// the idle loop was on its slow tick
+			// mid-morph: fast cadence so the ease stays smooth
 			if interval > 40*time.Millisecond {
 				interval = 40 * time.Millisecond
 			}
@@ -140,25 +143,17 @@ func absInt(n int) int {
 func (m *model) keepReadingPosition(f func()) {
 	var before int
 	if m.width > 0 {
-		before = m.transcriptLineCount(m.width)
+		before = m.transcriptLineCount(m.bodyWidth())
 	}
 	f()
+	m.gen++
 	if m.width <= 0 {
 		return
 	}
-	after := m.transcriptLineCount(m.width)
+	after := m.transcriptLineCount(m.bodyWidth())
 	if m.scroll > 0 {
 		m.scroll += after - before
-		if m.scroll < 0 {
-			m.scroll = 0
-		}
-		if after > m.bodyHeight() {
-			if maxScroll := after - m.bodyHeight(); m.scroll > maxScroll {
-				m.scroll = maxScroll
-			}
-		} else {
-			m.scroll = 0
-		}
+		m.clampScroll()
 	}
 }
 
@@ -168,6 +163,9 @@ func (m *model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	}
 	if m.palette {
 		return m.handlePaletteKey(msg)
+	}
+	if m.searchActive {
+		return m.handleSearchKey(msg)
 	}
 	switch msg.String() {
 	case "ctrl+c":
@@ -188,18 +186,34 @@ func (m *model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "f1", "ctrl+p":
 		m.openPalette(m.paletteQ)
 		return m, nil
+	case "ctrl+f":
+		m.searchActive = true
+		m.palette = false
+		m.matchIdx = 0
+		return m, nil
+	case "ctrl+g":
+		m.cycleLens(1)
+		return m, nil
+	case "alt+g":
+		m.cycleLens(-1)
+		return m, nil
 	case "ctrl+y":
 		m.copyFullTranscript()
 		return m, nil
 	case "ctrl+l":
 		m.transcript = nil
 		m.scroll = 0
+		m.gen++
 		return m, nil
 	case "ctrl+n":
 		m.newSession()
 		return m, nil
 	case "ctrl+r":
 		m.openSessions("")
+		return m, nil
+	case "ctrl+b":
+		m.sidebarTouched = true
+		m.sidebar = !m.sidebar
 		return m, nil
 	case "shift+tab":
 		m.approval = (m.approval + 1) % 3
@@ -209,31 +223,38 @@ func (m *model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.toggleExpanded()
 		return m, nil
 	case "home":
-		m.scroll = m.transcriptLineCount(m.width) // clamps to top once layout is recomputed
+		m.scroll = 1 << 30 // clampScroll pins to the true top
+		m.clampScroll()
 		return m, nil
 	case "end":
 		m.scroll = 0
 		return m, nil
-	case "pgup", "ctrl+u":
-		m.scroll += 10
+	case "pgup":
+		m.scroll += max(1, m.bodyHeight()-2)
+		m.clampScroll()
 		return m, nil
-	case "pgdn", "ctrl+d":
-		m.scroll -= 10
-		if m.scroll < 0 {
-			m.scroll = 0
-		}
+	case "pgdn":
+		m.scroll -= max(1, m.bodyHeight()-2)
+		m.clampScroll()
+		return m, nil
+	case "ctrl+u":
+		m.scroll += max(1, m.bodyHeight()/2)
+		m.clampScroll()
+		return m, nil
+	case "ctrl+d":
+		m.scroll -= max(1, m.bodyHeight()/2)
+		m.clampScroll()
 		return m, nil
 	case "ctrl+o":
 		m.toggleExpanded()
 		return m, nil
 	case "up":
 		m.scroll++
+		m.clampScroll()
 		return m, nil
 	case "down":
 		m.scroll--
-		if m.scroll < 0 {
-			m.scroll = 0
-		}
+		m.clampScroll()
 		return m, nil
 	case "ctrl+up", "alt+up":
 		m.historyPrev()
@@ -285,29 +306,34 @@ func (m *model) handleMouse(msg tea.MouseMsg) {
 	case tea.MouseButtonLeft:
 		m.handleMouseLeft(msg)
 	case tea.MouseButtonWheelUp:
-		m.scroll += 2
+		m.scroll += 3
+		m.clampScroll()
 	case tea.MouseButtonWheelDown:
-		m.scroll -= 2
-		if m.scroll < 0 {
-			m.scroll = 0
-		}
+		m.scroll -= 3
+		m.clampScroll()
 	}
 }
 
 func (m *model) handleMouseLeft(msg tea.MouseMsg) {
+	// The header occupies screen row 0 — body rows start at row 1.
+	// Clicks on the header (or anywhere below the body) are not transcript rows.
+	bodyRow := msg.Y - 1
 	if msg.Action == tea.MouseActionPress {
-		if msg.Y >= 0 && msg.Y < m.bodyHeight() {
+		if m.palette {
+			return // palette owns the screen; no selection behind it
+		}
+		if bodyRow >= 0 && bodyRow < m.bodyHeight() {
 			m.selecting = true
 			m.selMoved = false
-			m.selStart = selectPoint{line: msg.Y, col: msg.X}
+			m.selStart = selectPoint{line: bodyRow, col: msg.X}
 			m.selCur = m.selStart
 		}
 		return
 	}
 	if msg.Action == tea.MouseActionMotion && m.selecting {
-		if absInt(msg.Y-m.selCur.line) > 0 || absInt(msg.X-m.selCur.col) > 1 {
-			m.selCur = selectPoint{line: msg.Y, col: msg.X}
-			if dx, dy := absInt(msg.X-m.selStart.col), absInt(msg.Y-m.selStart.line); dx > 2 || dy > 0 {
+		if absInt(bodyRow-m.selCur.line) > 0 || absInt(msg.X-m.selCur.col) > 1 {
+			m.selCur = selectPoint{line: bodyRow, col: msg.X}
+			if dx, dy := absInt(msg.X-m.selStart.col), absInt(bodyRow-m.selStart.line); dx > 2 || dy > 0 {
 				m.selMoved = true
 			}
 		}
@@ -319,15 +345,19 @@ func (m *model) handleMouseLeft(msg tea.MouseMsg) {
 	if !m.selecting {
 		return
 	}
-	m.selCur = selectPoint{line: msg.Y, col: msg.X}
+	if m.palette {
+		m.selecting = false
+		return
+	}
+	m.selCur = selectPoint{line: bodyRow, col: msg.X}
 	if !m.selMoved {
-		if idx := m.hitExpandableAtY(msg.Y); idx >= 0 && idx < len(m.transcript) {
+		if idx := m.hitExpandableAtY(bodyRow); idx >= 0 && idx < len(m.transcript) {
 			m.toggleExpandedAt(idx)
 		}
 		m.selecting = false
 		return
 	}
-	lines := m.transcriptLines(m.width, m.bodyHeight(), nil)
+	lines := m.transcriptLines(m.bodyWidth(), m.bodyHeight(), nil)
 	text := copySelectionText(lines, m.selStart, m.selCur)
 	m.selecting = false
 	if err := copyToClipboard(text); err != nil {
@@ -351,37 +381,38 @@ func (m *model) toggleExpandedAt(idx int) {
 	if idx < 0 || idx >= len(m.transcript) {
 		return
 	}
-	before := m.transcriptLineCount(m.width)
+	before := m.transcriptLineCount(m.bodyWidth())
 	m.transcript[idx].expanded = !m.transcript[idx].expanded
-	after := m.transcriptLineCount(m.width)
-	delta := after - before
-	if delta > 0 {
-		m.scroll += delta
-	} else if delta < 0 {
-		m.scroll += delta
-		if m.scroll < 0 {
-			m.scroll = 0
-		}
-	}
-	h := m.bodyHeight()
-	if m.scroll < 0 {
-		m.scroll = 0
-	}
-	if after > h {
-		if maxScroll := after - h; m.scroll > maxScroll {
-			m.scroll = maxScroll
-		}
-	} else {
-		m.scroll = 0
-	}
+	m.gen++
+	after := m.transcriptLineCount(m.bodyWidth())
+	m.scroll += after - before
+	m.clampScroll()
 }
 
 func (m *model) transcriptLineCount(width int) int {
-	total := 0
-	for _, block := range m.transcript {
-		total += len(renderBlockZen(block, width))
+	lines, _ := m.visibleLines(width)
+	return len(lines)
+}
+
+// clampScroll pins m.scroll into the legal range for the current layout.
+// Every scroll mutation goes through this so a huge value (e.g. from Home on
+// a short transcript) can never strand the user above the top with a dead
+// scroll zone.
+func (m *model) clampScroll() {
+	if m.width <= 0 {
+		return
 	}
-	return total
+	lines, _ := m.visibleLines(m.bodyWidth())
+	maxScroll := len(lines) - m.bodyHeight()
+	if maxScroll < 0 {
+		maxScroll = 0
+	}
+	if m.scroll > maxScroll {
+		m.scroll = maxScroll
+	}
+	if m.scroll < 0 {
+		m.scroll = 0
+	}
 }
 
 func (m *model) handlePaletteKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
@@ -482,18 +513,53 @@ func (m *model) execSlashCommand(raw string) tea.Cmd {
 		return nil
 	}
 	name := strings.ToLower(fields[0])
+	m.recordRecent(name)
 	switch name {
 	case "/help":
 		m.palette = true
 		m.paletteQ = ""
 		m.refreshPalette()
+	case "/search":
+		m.openSearch()
+	case "/lens":
+		arg := strings.TrimSpace(strings.Join(fields[1:], " "))
+		if arg == "" {
+			m.cycleLens(1)
+		} else if !m.setLensByQuery(arg) {
+			m.notice = "unknown lens '" + arg + "' (ctrl+g cycles, /lens-off disables)"
+		}
+	case "/lens-off":
+		m.lensIdx = 0
+		m.notice = "lens off"
 	case "/copy":
 		m.copyFullTranscript()
+	case "/copy-last":
+		m.notice = m.copyLastAssistant()
+	case "/copy-code":
+		m.notice = m.copyLastCode()
+	case "/export":
+		m.notice = m.exportTranscript()
+	case "/expand-all":
+		m.notice = m.setAllExpanded(true)
+	case "/collapse-all":
+		m.notice = m.setAllExpanded(false)
+	case "/sidebar":
+		_ = m.toggleSidebar()
+	case "/branch":
+		m.notice = m.gitNotice()
+	case "/usage":
+		_ = m.showUsage()
+	case "/stats":
+		_ = m.showStats()
+	case "/keys":
+		m.openHelp()
 	case "/quit", "/exit":
 		// Same as the palette: actually leave the TUI.
 		return tea.Quit
 	case "/clear":
 		m.transcript = nil
+		m.scroll = 0
+		m.gen++
 	case "/new":
 		m.newSession()
 	case "/revert":
@@ -567,10 +633,10 @@ func (m *model) execSlashCommand(raw string) tea.Cmd {
 
 func (m *model) execPaletteItem(item commandItem) tea.Cmd {
 	if item.Name == "/quit" {
+		m.recordRecent(item.Name)
 		return tea.Quit
 	}
-	before := m.transcript
-	_ = before
+	m.recordRecent(item.Name)
 	msg := item.Run(m)
 	if msg == "quit" {
 		return tea.Quit
@@ -586,6 +652,7 @@ func (m *model) newSession() {
 	m.sessionID = ""
 	m.finalText = ""
 	m.scroll = 0
+	m.gen++
 	m.notice = "new session ready"
 }
 
@@ -597,7 +664,12 @@ func (m *model) openPalette(q string) {
 }
 
 func (m *model) refreshPalette() {
-	m.paletteView = filterCommands(m.paletteQ)
+	q := strings.TrimSpace(m.paletteQ)
+	items := filterCommands(q)
+	if q == "" {
+		items = mergeRecent(items, m.recentCmds)
+	}
+	m.paletteView = items
 	if m.paletteIdx >= len(m.paletteView) {
 		m.paletteIdx = len(m.paletteView) - 1
 	}
@@ -671,6 +743,7 @@ func (m *model) startRun(prompt string) tea.Cmd {
 	m.transcript = append(m.transcript, block{kind: kindUser, title: "YOU", body: prompt, at: time.Now()})
 	m.transcript = append(m.transcript, block{kind: kindThinking, title: "thinking", streaming: true, at: time.Now()})
 	m.scroll = 0
+	m.gen++
 
 	args := []string{"run", "--json"}
 	args = append(args, m.policyArgs()...)
@@ -732,6 +805,9 @@ func (m *model) failStart(cancel context.CancelFunc, err error) {
 	m.running = false
 	m.runCancel = nil
 	cancel()
+	// The engine never produced a single event — close the pending
+	// thinking/assistant blocks so the UI is not stuck "streaming" forever.
+	m.closeStreamingAssistant()
 	m.transcript = append(m.transcript, block{kind: kindNotice, title: "engine", body: err.Error(), ok: false, at: time.Now()})
 }
 
@@ -785,6 +861,10 @@ func (m *model) interrupt(source string) {
 func (m *model) finishRun(err error) {
 	m.running = false
 	m.runCancel = nil
+	m.lastRunTools = m.toolCount
+	m.lastRunTokensIn = m.runTokensIn
+	m.lastRunTokensOut = m.runTokensOut
+	m.lastRunDuration = time.Since(m.runStarted)
 	m.closeStreamingAssistant()
 	if m.runDone != nil {
 		close(m.runDone)
