@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 	"testing"
@@ -135,8 +136,19 @@ func TestPruneStale(t *testing.T) {
 }
 
 func TestShellDisplayName(t *testing.T) {
-	if got := shellDisplayName("powershell"); got != "powershell" {
-		t.Fatalf("powershell → %q", got)
+	if runtime.GOOS == "windows" {
+		if got := shellDisplayName("powershell"); got != "powershell" {
+			t.Fatalf("powershell → %q", got)
+		}
+	} else if bash, err := exec.LookPath("bash"); err == nil {
+		_ = bash
+		if got := shellDisplayName("bash"); got != "bash" {
+			t.Fatalf("bash → %q", got)
+		}
+	} else if _, err := exec.LookPath("sh"); err == nil {
+		if got := shellDisplayName("sh"); got != "sh" {
+			t.Fatalf("sh → %q", got)
+		}
 	}
 	if got := shellDisplayName("definitely-not-a-shell"); got != "unknown" {
 		t.Fatalf("unknown preference → %q, want unknown", got)
@@ -367,14 +379,23 @@ func TestEndToEndAgentPipeline(t *testing.T) {
 	}
 }
 
-// TestBinaryShellSmoke: the standalone shell path with a real Windows
-// interpreter, real policy engine and durable output handle.
+// TestBinaryShellSmoke: the standalone shell path with a real interpreter,
+// real policy engine and durable output handle.
 func TestBinaryShellSmoke(t *testing.T) {
+	shell := "bash"
+	arg := "echo e2e-shell-smoke"
+	if runtime.GOOS == "windows" {
+		shell = "powershell"
+		arg = "Write-Output e2e-shell-smoke"
+	}
+	if _, err := exec.LookPath(shell); err != nil {
+		t.Skipf("%s not on PATH", shell)
+	}
 	dir := t.TempDir()
 	stateDir := t.TempDir()
 	env := []string{"CREATOR_DATA_DIR=" + stateDir}
 	stdout, stderr, err := creator(t, env, dir, 60*time.Second,
-		"shell", "--shell", "powershell", "--json", "Write-Output e2e-shell-smoke")
+		"shell", "--shell", shell, "--json", arg)
 	if err != nil {
 		t.Fatalf("shell: %v\nstderr: %s", err, stderr)
 	}

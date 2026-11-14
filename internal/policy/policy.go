@@ -196,24 +196,68 @@ func truncateCmd(s string) string {
 // they compare. Symlinks are resolved when possible, the path is cleaned
 // (“/x/../y“ → “/y“), separators are normalized, the extended-length
 // prefix (“\\?\“) is stripped, and drive letters are lowercased.
+// cleanTextPath collapses redundant separators and resolves "." and ".."
+// textually, preserving UNC roots (//server/share) and leading POSIX
+// slashes. It deliberately avoids filepath (which is OS-specific and would
+// leave Windows paths unrecognized on Linux).
+func cleanTextPath(p string) string {
+	abs := strings.HasPrefix(p, "/")
+	unc := false
+	if strings.HasPrefix(p, "//") && !strings.HasPrefix(p, "///") &&
+		!strings.HasPrefix(p, "//?") && !strings.HasPrefix(p, "//.") {
+		unc = true
+		p = p[2:]
+		abs = false
+	}
+	parts := strings.FieldsFunc(p, func(r rune) bool { return r == '/' })
+	out := []string{}
+	for _, part := range parts {
+		switch part {
+		case "", ".":
+			continue
+		case "..":
+			if n := len(out); n > 0 && out[n-1] != ".." {
+				out = out[:n-1]
+				continue
+			}
+			if !abs && !unc {
+				out = append(out, "..")
+			}
+			continue
+		default:
+			out = append(out, part)
+		}
+	}
+	res := strings.Join(out, "/")
+	switch {
+	case unc:
+		if res == "" {
+			return "//"
+		}
+		return "//" + res
+	case abs:
+		return "/" + res
+	default:
+		return res
+	}
+}
+
 func canonicalDangerPath(p string) string {
 	t := strings.TrimSpace(p)
 	if t == "" {
 		return ""
 	}
-	// Resolve symlinks where the path exists; fall back to lexical cleaning
-	// when it doesn't.
+	// Resolve symlinks where the path exists; fall back to the textual
+	// normalization below when it doesn't.
 	if resolved, err := filepath.EvalSymlinks(t); err == nil {
 		t = resolved
 	}
-	t = filepath.ToSlash(filepath.Clean(t))
-	t = strings.TrimPrefix(t, `\\?\`)
-	t = strings.TrimPrefix(t, `//?/`)
-	t = strings.TrimPrefix(t, `\\.\`)
-	t = strings.TrimPrefix(t, `//./`)
-	// Drive letters follow the same lowercase rule; col separators
-	// normalize \ → / so c:\windows agrees with c:/windows.
+	// Normalize separators first so Windows paths classify identically on
+	// every host OS; then clean textually (filepath is OS-specific).
 	t = strings.ReplaceAll(t, `\`, "/")
+	t = strings.TrimPrefix(t, `//?/`)
+	t = strings.TrimPrefix(t, `//./`)
+	t = cleanTextPath(t)
 	t = strings.ToLower(t)
 	return strings.TrimSuffix(t, "/")
 }
