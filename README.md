@@ -1,5 +1,21 @@
 # Creator
 
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/creator-scifi.png">
+    <source media="(prefers-color-scheme: light)" srcset="docs/assets/creator-scifi-light.png">
+    <img src="docs/assets/creator-scifi.png" alt="Creator — the word CREATOR drawn as a white wireframe sci-fi mark" width="720">
+  </picture>
+</p>
+
+<p align="center">
+  <a href="https://github.com/DERYK-RYLOY/creator/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/DERYK-RYLOY/creator/ci.yml?branch=main&label=tests" alt="tests"></a>
+  <a href="https://github.com/DERYK-RYLOY/creator/releases"><img src="https://img.shields.io/github/v/release/DERYK-RYLOY/creator?label=release" alt="release"></a>
+  <img src="https://img.shields.io/github/go-mod/go-version/DERYK-RYLOY/creator" alt="go version">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="license"></a>
+  <a href="https://goreportcard.com/report/github.com/DERYK-RYLOY/creator"><img src="https://goreportcard.com/badge/github.com/DERYK-RYLOY/creator" alt="go report card"></a>
+</p>
+
 A terminal agent that never floods its own context.
 
 This tree ships three binaries: **`creator`**, the terminal-first IDE/agent,
@@ -9,9 +25,11 @@ shells it prints usage. `creator run ...` stays the scriptable headless form.
 
 ## What Creator does
 
-- `creator` or `creator tui` — mission control: a full-screen terminal IDE with
-  a welcome hero, command palette, transcript, panels, policy cycling and queued
-  messages while the agent runs.
+- `creator` or `creator tui` - mission control: a full-screen terminal IDE with
+  a welcome hero, a fuzzy command palette (35 commands, frecency-first), an
+  in-transcript search (`CTRL+F`), 35 one-keystroke highlight lenses that filter
+  and light up what matters in the conversation, transcript, panels, policy
+  cycling and queued messages while the agent runs.
 - `creator run "..."` — a headless agent that reads files, runs commands, edits
   code and verifies its work.
 - `creator shell "..."` — the same policy-checked job runner, with no model.
@@ -49,16 +67,51 @@ FAIL github.com/acme/app [build failed]
 The model decides what to look at next. Detail is pulled on demand instead of
 pushed by default.
 
+<p align="center">
+  <img src="docs/assets/blueprint-architecture.jpg" alt="Creator AI agent core loop — exploded engineering blueprint: token budget governor, step governor, adaptive output paging, checkpointed file edits, AST policy engine, SSE streaming, Bubble Tea TUI, MCP server, Lua plugins — all surrounding the C-shaped gear core engine" width="760">
+</p>
+
+<p align="center"><sub>The whole system on one sheet — the C-shaped gear is the engine; every subsystem orbits it.</sub></p>
+
 ## Install
 
+The short way — one line, no Go required, no admin rights:
+
+**macOS / Linux**
+
 ```bash
-go build -trimpath -ldflags "-s -w" -o bin/creator ./cmd/creator
-go build -trimpath -ldflags "-s -w" -o bin/creator-tui ./cmd/creator-tui
-go build -trimpath -ldflags "-s -w" -o bin/ctr ./cmd/ctr
+curl -fsSL https://raw.githubusercontent.com/DERYK-RYLOY/creator/main/install.sh | sh
 ```
 
-On Windows, name the outputs `creator.exe`, `creator-tui.exe` and `ctr.exe`. Requires
-Go 1.27+ and no CGO.
+**Windows (PowerShell)**
+
+```powershell
+irm https://raw.githubusercontent.com/DERYK-RYLOY/creator/main/install.ps1 | iex
+```
+
+Both installers are idempotent: they detect your OS/arch, download the release
+archive (building from source instead when there is no release yet), verify its
+SHA-256 against `checksums.txt`, put `creator`, `creator-tui` and `ctr` on your
+user PATH (`~/.local/bin` on Unix, `%LOCALAPPDATA%\Programs\Creator` on Windows),
+add a Start Menu shortcut on Windows, and leave you ready to type `creator`.
+
+With Go 1.27+ (no CGO):
+
+```bash
+go install github.com/DERYK-RYLOY/creator/cmd/creator@latest
+go install github.com/DERYK-RYLOY/creator/cmd/creator-tui@latest
+go install github.com/DERYK-RYLOY/creator/cmd/ctr@latest
+```
+
+From a checkout:
+
+```bash
+git clone https://github.com/DERYK-RYLOY/creator && cd creator
+go build -trimpath -ldflags "-s -w" -o bin/creator ./cmd/creator
+creator install        # builds the trio, adds the bin directory to your PATH
+```
+
+On Windows, name the outputs `creator.exe`, `creator-tui.exe` and `ctr.exe`.
 
 `creator install` builds `creator`, `creator-tui` and `ctr` into `~/.local/bin`
 (override with `--dir`). Run it from a checkout of this repository:
@@ -102,11 +155,15 @@ strict|balanced|yolo`, `--allow-critical`, `--output-tokens`, `--max-steps`,
 
 The registry also exposes read-only triage helpers used for incident response
 and code archaeology: `outline`, `read_symbol`, `search_files`, `diff`,
-`review`, `hash`, `strings`, `hexdump`, `entropy`, `pe_info`, `elf_info`,
+`review`, `tree`, `todos`, `find_def`, `repo_stats`, `hash`, `strings`, `hexdump`, `entropy`, `pe_info`, `elf_info`,
 `xor_decode`, `rot13`, `hex_to_ascii`, `base64_decode` and `caesar_shift`.
 `net_fetch` and `web_fetch` fetch http(s) URLs and refuse loopback/private
 targets unless `CREATOR_ALLOW_PRIVATE_NET=1`, which you should set only for
 trusted internal networks.
+
+<p align="center">
+  <img src="docs/assets/creator-gear.png" alt="Creator — the gear-and-circuit wordmark" width="640">
+</p>
 
 ## Mission control
 
@@ -130,21 +187,34 @@ Keys:
 | `ESC` | Interrupt the running mission, or clear the prompt |
 | `CTRL+C` | Quit and stop the running mission |
 | `CTRL+Y` | Copy the full transcript |
+| `CTRL+F` | Search the conversation (`enter` next, `alt+enter`/`up` previous, `pgup`/`pgdn` jump 5, `esc` clears then closes) |
+| `CTRL+G` / `ALT+G` | Cycle the 35 highlight lenses forward / backward |
 | `SHIFT+TAB` | Cycle manual permissions → accept edits → bypass permissions |
-| `CTRL+P` / `F1` | Command palette |
+| `CTRL+P` / `F1` | Command palette (35 commands, fuzzy + frecency) |
 | `CTRL+R` | Session history (`/sessions`) |
-| `PGUP` / `PGDN` | Scroll the transcript |
+| `PGUP` / `PGDN` | Scroll a page of the transcript |
+| `CTRL+U` / `CTRL+D` | Scroll a half page |
 | `UP` / `DOWN` | Scroll one line |
+| `HOME` / `END` | Jump to the top / the live tail |
 | `CTRL+UP` / `CTRL+DOWN` | Prompt history |
 | `CTRL+O` | Expand/collapse the latest tool/output box |
 | `TAB` | Expand/collapse the latest tool/output box |
+| `CTRL+B` | Toggle the right sidebar (session - model - workspace - lens - keys) |
 | Drag with left mouse button | Select text and copy it |
 
-Slash commands worth knowing: `/sessions` opens the session list, `/session <id>` resumes one, `/continue` resumes the most recent one, `/new` starts fresh, `/todo` opens the session checklist, `/copy` copies the full transcript, `/theme` browses built-in themes, and `/models` shows the connected providers' working free models. Drag with the left mouse button selects and copies any visible transcript section; left-clicking a tool/output box without dragging expands or collapses it.
+Slash commands worth knowing (all 35 live in the F1 palette): `/search` finds text in the conversation, `/lens [name|off]` pins one of the 35 highlight lenses (or cycles with `ctrl+g`, `/lens-off` to disable), `/sessions` opens the session list, `/session <id>` resumes one, `/continue` resumes the most recent one, `/new` starts fresh, `/todo` opens the session checklist, `/copy` / `/copy-last` / `/copy-code` copy the transcript, the last reply or the last code block, `/export` saves the transcript as markdown under `~/.creator/exports/`, `/usage` shows last-run tokens, `/stats` shows transcript statistics, `/expand-all` / `/collapse-all` fold every box, `/keys` opens the keyboard cheatsheet overlay, `/theme` browses the built-in themes, `/models` shows the connected providers' working free models, and `/quit` leaves mission control. Drag with the left mouse button selects and copies any visible transcript section; left-clicking a tool/output box without dragging expands or collapses it.
 
-The screen is a near-black, minimal conversation surface with thin foreground-only strokes and no filled panel backgrounds. The user prompt and assistant reply are plain text; tool work renders as small sharp-cornered boxes; long-running tools expose their latest output inline and can expand in place. Permission mode and token/tool counters stay quiet at the bottom, and `/sessions` restores a prior conversation without opening a new project state accidentally.
+**Find and lenses.** `CTRL+F` opens the find bar inside the transcript: matches light up inline, the bar shows a live `n/N` counter, `enter` jumps to the next match (wrapping), `alt+enter`/`up` the previous one, `pgup`/`pgdn` skip five at a time, `esc` first clears the query then closes the bar. Lenses go one step further: `CTRL+G` cycles 35 built-in filters — `errors`, `warnings`, `security`, `secrets`, `todos`, `risk`, `important`, `urls`, `envvars`, `breaking` and friends — that both filter the feed (blocks without matches collapse away; the user's turns and live work in flight always stay) and highlight the matched words in the lens color. The active lens shows in the sidebar with its hit count and can be pinned by slug with `/lens errors` or disabled with `/lens-off`.
+
+The screen is a near-black, professional conversation surface. A one-line header carries the Creator wordmark on the left and the git branch plus provider/model on the right; the body splits into the transcript and an optional right sidebar (session state, model, workspace, active lens, key map - auto-shown at 120+ columns, toggled with CTRL+B). User turns render with an accent spine; assistant replies are plain text; tool work renders as bordered boxes whose hairline warms to amber while running and cools to quiet on completion. The composer is a bordered input box that warms to the accent color while the agent works. The status bar underneath carries the permission-mode chip and, when a lens is active, the lens chip (hits/hidden) on the left, and live run telemetry on the right - elapsed time, current tool, token and tool counters.
+
+**The CREATOR wordmark animation.** The signature wordmark is a volumetric dot field baked into the binary and rendered as Unicode braille patterns - no assets, no goroutines, pure functions of a tick-driven clock. The master cutout is downscaled to the terminal lattice and every dot carries a pseudo-depth plane, so energy fronts sweep *through* the volume rather than over a decal. The motion model: layered-sine depth parallax, a smooth-vector idle drift with an outward-breathing tide, pow-sharpened caustic light filaments, heartbeat energy fronts with spring displacement and a tangential swirl, an alternating comet glare that white-heats the dots it crosses, exponential sparkle flares and rising bubbles with fading wakes. The palette rides the active theme (muted to thinking to foreground to accent, with a molten near-white tip), ping-ponged through a gamma curve so crests detonate instead of washing out. An idle empty session shows the full-size hero wordmark above the composer; once the transcript fills, the hero condenses to the animated corner widget in the status bar right edge.
 
 ## How it works
+
+<p align="center">
+  <img src="docs/assets/blueprint-coreloop.jpg" alt="Creator core loop — the PROMPT to PROVIDER CALL to TOOL CALLS to OBSERVATIONS orbit around the C-shaped gear engine, annotated as an engineering blueprint" width="860">
+</p>
 
 **Digest + handle.** Output is classified (search results, file listings,
 diffs, build logs, free text) and summarized to a token budget. Head and tail
@@ -312,12 +382,13 @@ permissions) or in your environment.
 cmd/creator         CLI dispatch, headless engine, install, human/JSON output
 cmd/creator-tui     mission-control entrypoint (flags, engine discovery, tea.Program)
 cmd/ctr             short alias for creator
-internal/tui        mission-control model, view, theme, command palette, panels
+cmd/webserver       embedded landing page for the repo (http server, go:embed)
+internal/tui        mission-control model, view, theme, command palette, lenses, search
 internal/agent      tool-calling loop, budget governor, system prompt
 internal/provider   registry + OpenAI-compatible and Anthropic wire protocols
 internal/reduce     digesting, classification, paging
 internal/runner     jobs, timeouts, capped capture, shell resolution
-internal/tools      read/write/edit/list/glob/grep/shell/jobs/out + triage helpers
+internal/tools      read/write/edit/list/glob/grep/shell/jobs/out + triage helpers (tree, todos, find_def, repo_stats)
 internal/board      task board: verify-oracle completion, DAG deps, flags, nudges
 internal/delegate   isolated sub-agents: spawn, tree limits, reports, event journal
 internal/policy     bash AST classification and approval engine
@@ -334,6 +405,8 @@ Go 1.27+, no CGO. The suite is plain `go test`.
 - Clone, then `go build ./...`, `go vet ./...`, `gofmt -l .`, `go test ./...`.
 - `bin/` is gitignored. Rebuild the binary with:
   `go build -trimpath -ldflags "-s -w" -o bin/creator.exe ./cmd/creator`
+- The landing page lives in `cmd/webserver` and is embedded into the binary.
+  Preview it with `go run ./cmd/webserver` (http://127.0.0.1:8080, override with `CREATOR_WEB_ADDR`).
 - `.creator/` is gitignored on purpose: it holds runtime state (sessions,
   jobs, delegates, checkpoints, API keys) — never commit it or publish it.
 - Build artifacts (`*.exe`, `*.test`, `bin/`, `tools/pdfgen/pdfgen`) are
