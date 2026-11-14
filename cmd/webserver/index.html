@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Creator — The Terminal Agent That Never Floods Its Context</title>
+<meta name="description" content="Creator is an autonomous, terminal-first IDE and agent. Large outputs become small digests with handles — your context never drowns. Delegation, verification-gated tasks, 35 highlight lenses, 35 themes, MCP-native.">
+<meta name="theme-color" content="#0a0a0c">
+<meta name="color-scheme" content="dark">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+<link rel="icon" type="image/png" sizes="64x64" href="assets/favicon-64.png">
+<link rel="apple-touch-icon" sizes="180x180" href="assets/favicon-180.png">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Creator — The Terminal Agent That Never Floods Its Context">
+<meta property="og:description" content="An autonomous, terminal-first IDE and agent. Digests and handles instead of raw floods — your context stays sharp.">
+<meta property="og:image" content="assets/social-preview.png">
+<meta property="og:image:width" content="1280">
+<meta property="og:image:height" content="640">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="assets/social-preview.png">
+<style>
+/* ============ Design tokens ============ */
+:root{
+  --bg:#0a0a0c;
+  --bg-soft:#101014;
+  --panel:#111116;
+  --panel-2:#15151b;
+  --line:rgba(255,255,255,.08);
+  --line-strong:rgba(255,255,255,.14);
+  --text:#e9e7df;
+  --text-dim:#a7a9b4;
+  --text-faint:#6f7180;
+  --ice:#8ee6ff;
+  --sky:#38bdf8;
+  --teal:#2dd4bf;
+  --teal-deep:#14b8a6;
+  --amber:#f4c069;
+  --mono:ui-monospace,'Cascadia Code','Fira Code',Menlo,Consolas,monospace;
+  --sans:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --radius:16px;
+  --shadow:0 24px 60px rgba(0,0,0,.55);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{
+  scroll-behavior:smooth;
+  scroll-padding-top:96px; /* fixed nav must never cover anchored sections */
+}
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+}
+
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:var(--sans);
+  line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+::selection{background:rgba(56,189,248,.28);color:#fff}
+:focus-visible{outline:2px solid var(--sky);outline-offset:3px;border-radius:4px}
+.skip-link{position:absolute;left:-9999px;top:0;background:var(--sky);color:#031016;padding:.6rem 1rem;border-radius:0 0 10px 0;font-weight:700;z-index:200}
+.skip-link:focus{left:0}
+
+/* ============ Ambient background ============ */
+.ambient{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.ambient::before{
+  content:"";position:absolute;inset:0;
+  background:
+    radial-gradient(1000px 600px at 78% -10%, rgba(45,212,191,.16), transparent 60%),
+    radial-gradient(900px 700px at -15% 30%, rgba(56,189,248,.14), transparent 60%),
+    radial-gradient(800px 600px at 55% 115%, rgba(192,132,252,.1), transparent 60%);
+}
+.grid-drift{
+  position:absolute;inset:-120px;
+  background-image:
+    linear-gradient(rgba(142,230,255,.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(142,230,255,.05) 1px, transparent 1px);
+  background-size:56px 56px;
+  animation:gridDrift 44s linear infinite;
+  mask-image:radial-gradient(1200px 800px at 50% 20%, black 30%, transparent 75%);
+  -webkit-mask-image:radial-gradient(1200px 800px at 50% 20%, black 30%, transparent 75%);
+}
+@keyframes gridDrift{from{transform:translateY(0)}to{transform:translateY(56px)}}
+@media (prefers-reduced-motion:reduce){.grid-drift{animation:none}}
+main,footer,nav{position:relative;z-index:1}
+
+/* ============ Nav ============ */
+.nav{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  background:rgba(10,10,12,.72);
+  border-bottom:1px solid var(--line);
+  transition:box-shadow .3s ease;
+}
+.nav.scrolled{box-shadow:0 8px 40px rgba(0,0,0,.45)}
+.nav-inner{max-width:1200px;margin:0 auto;padding:.8rem 1.5rem;display:flex;align-items:center;justify-content:space-between;gap:1rem}
+.brand{display:flex;align-items:center;gap:.7rem;text-decoration:none;color:var(--text)}
+.brand-mark{
+  width:34px;height:34px;border-radius:9px;display:grid;place-items:center;
+  background:linear-gradient(145deg,#0e2a2a,#0a1616);
+  border:1px solid rgba(45,212,191,.45);
+  color:var(--teal);font-family:var(--mono);font-size:15px;
+  box-shadow:0 0 18px rgba(45,212,191,.25), inset 0 0 12px rgba(45,212,191,.15);
+}
+.brand-icon{width:34px;height:34px;border-radius:9px;border:1px solid rgba(45,212,191,.4);background:#000}
+.brand-name{font-weight:800;font-size:1.12rem;letter-spacing:-.02em}
+.brand-tag{font-family:var(--mono);font-size:.6rem;color:var(--teal);border:1px solid rgba(45,212,191,.35);border-radius:999px;padding:.1rem .45rem;letter-spacing:.12em}
+.nav-links{display:flex;gap:1.6rem;list-style:none;font-size:.88rem}
+.nav-links a{color:var(--text-dim);text-decoration:none;transition:color .2s}
+.nav-links a:hover{color:var(--ice)}
+.btn{
+  display:inline-flex;align-items:center;gap:.55rem;
+  font-family:var(--sans);font-weight:700;text-decoration:none;border:none;cursor:pointer;
+  border-radius:999px;padding:.62rem 1.25rem;font-size:.86rem;
+  transition:transform .2s ease,box-shadow .2s ease,background .2s ease,color .2s ease;
+  white-space:nowrap;
+}
+.btn:active{transform:scale(.97)}
+.btn-primary{background:var(--text);color:#0b0b0e}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 10px 30px rgba(142,230,255,.22);background:var(--ice)}
+.btn-ghost{background:transparent;color:var(--text);border:1px solid var(--line-strong)}
+.btn-ghost:hover{border-color:var(--sky);color:var(--ice);transform:translateY(-2px)}
+
+/* ============ Hero ============ */
+.hero{max-width:1200px;margin:0 auto;padding:8.5rem 1.5rem 4.5rem;display:grid;grid-template-columns:1fr 1fr;gap:3.5rem;align-items:center}
+.eyebrow{font-family:var(--mono);font-size:.68rem;letter-spacing:.32em;color:var(--teal);text-transform:uppercase;margin-bottom:1.1rem;display:flex;align-items:center;gap:.6rem}
+.eyebrow::before{content:"";display:inline-block;width:26px;height:1px;background:linear-gradient(90deg,transparent,var(--teal))}
+h1{font-size:clamp(2.4rem,5.4vw,4rem);line-height:1.06;letter-spacing:-.03em;font-weight:800}
+.grad{background:linear-gradient(100deg,var(--ice) 0%,var(--teal) 45%,#7dd3fc 90%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.lede{margin:1.4rem 0 1.8rem;font-size:1.14rem;color:var(--text-dim);max-width:32rem}
+.lede strong{color:var(--text)}
+.cta-row{display:flex;gap:.9rem;flex-wrap:wrap;margin-bottom:1.6rem}
+.btn-big{font-size:.95rem;padding:.8rem 1.6rem}
+.hero-stats{display:flex;gap:1.4rem;flex-wrap:wrap;font-family:var(--mono);font-size:.72rem;color:var(--text-faint)}
+.hero-stats b{display:block;color:var(--ice);font-size:1.02rem}
+.hero-stats span{letter-spacing:.04em}
+
+/* hero image card */
+.hero-card{
+  position:relative;border-radius:var(--radius);background:#000;
+  border:1px solid var(--line-strong);box-shadow:var(--shadow), 0 0 80px rgba(45,212,191,.12);
+  padding:1.2rem;overflow:hidden;
+}
+.hero-card::after{
+  content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  background:radial-gradient(120% 90% at 50% 0%, rgba(142,230,255,.09), transparent 55%);
+}
+.hero-card .ring{
+  position:absolute;inset:-40%;pointer-events:none;
+  background:conic-gradient(from 0deg, transparent 0 70%, rgba(45,212,191,.28) 78%, rgba(142,230,255,.7) 82%, rgba(45,212,191,.28) 86%, transparent 94% 100%);
+  animation:spin 7s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.ring{animation:none}}
+.hero-card figure{position:relative}
+.hero-card img{width:100%;height:auto;display:block}
+.hero-card figcaption{
+  display:flex;justify-content:space-between;align-items:center;gap:1rem;
+  font-family:var(--mono);font-size:.62rem;letter-spacing:.18em;color:var(--text-faint);
+  border-top:1px solid var(--line);padding-top:.7rem;margin-top:.9rem;text-transform:uppercase;
+}
+.float{animation:float 7s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+@media (prefers-reduced-motion:reduce){.float{animation:none}}
+
+/* ============ Terminal demo ============ */
+.demo-wrap{max-width:880px;margin:0 auto 5rem;padding:0 1.5rem}
+.terminal{
+  background:#0d0d10;border:1px solid var(--line-strong);border-radius:14px;
+  box-shadow:var(--shadow),0 0 60px rgba(56,189,248,.1);overflow:hidden;
+}
+.terminal-bar{display:flex;align-items:center;gap:.45rem;padding:.62rem .85rem;background:#17171c;border-bottom:1px solid var(--line)}
+.dot{width:11px;height:11px;border-radius:50%}
+.dot.r{background:#ff5f57}.dot.y{background:#febc2e}.dot.g{background:#28c840}
+.terminal-title{margin-left:.6rem;font-family:var(--mono);font-size:.7rem;color:var(--text-faint)}
+.terminal-body{font-family:var(--mono);font-size:.83rem;padding:1.1rem 1.2rem 1.3rem;min-height:9.2em}
+.t-line{display:flex;gap:.55rem;margin:.2rem 0;white-space:pre-wrap;word-break:break-word}
+.t-prompt{color:#34d399}
+.t-cmd{color:#e9e7df}
+.t-out{color:#8b93a7}
+.t-ok{color:#34d399}
+.t-info{color:#8ee6ff}
+.caret{display:inline-block;width:.52em;height:1.05em;background:var(--ice);vertical-align:-0.15em;margin-left:1px;animation:blink 1.05s steps(1) infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+@media (prefers-reduced-motion:reduce){.caret{animation:none}}
+
+/* ============ Sections ============ */
+.section{max-width:1200px;margin:0 auto;padding:5rem 1.5rem}
+.section-head{display:flex;align-items:flex-end;justify-content:space-between;gap:2rem;margin-bottom:2.6rem;flex-wrap:wrap}
+h2{font-size:clamp(1.7rem,3.2vw,2.5rem);letter-spacing:-.02em;line-height:1.15}
+.section-head p{color:var(--text-dim);max-width:26rem}
+.section-tag{font-family:var(--mono);font-size:.65rem;letter-spacing:.3em;color:var(--text-faint);text-transform:uppercase;margin-bottom:.6rem}
+
+/* ============ Feature cards ============ */
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:1.1rem}
+.card{
+  background:linear-gradient(180deg,var(--panel),var(--panel-2));
+  border:1px solid var(--line);border-radius:var(--radius);padding:1.5rem;
+  transition:transform .3s ease,border-color .3s ease,box-shadow .3s ease;
+  position:relative;
+}
+.card:hover{transform:translateY(-6px);border-color:rgba(142,230,255,.4);box-shadow:0 24px 50px rgba(0,0,0,.5),0 0 40px rgba(45,212,191,.08)}
+.card-icon{width:44px;height:44px;border-radius:11px;display:grid;place-items:center;margin-bottom:1rem;border:1px solid var(--line-strong);background:rgba(255,255,255,.03)}
+.card h3{font-size:1.05rem;margin-bottom:.4rem;letter-spacing:-.01em}
+.card p{color:var(--text-dim);font-size:.9rem}
+.card code{font-family:var(--mono);color:var(--ice);font-size:.8em;background:rgba(142,230,255,.08);border-radius:5px;padding:.05em .35em}
+
+/* ============ How it works ============ */
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:1.1rem;counter-reset:step}
+.step{
+  border:1px solid var(--line);border-radius:var(--radius);padding:1.5rem;background:var(--panel);
+  position:relative;
+}
+.step::before{
+  counter-increment:step;content:"0" counter(step);
+  font-family:var(--mono);font-size:.72rem;color:var(--teal);letter-spacing:.25em;
+  display:inline-block;border:1px solid rgba(45,212,191,.4);border-radius:6px;padding:.18rem .5rem;margin-bottom:.9rem;
+}
+.step h3{font-size:1.02rem;margin-bottom:.5rem}
+.step p{color:var(--text-dim);font-size:.9rem;margin-bottom:.8rem}
+.code{
+  font-family:var(--mono);font-size:.74rem;background:#0b0b0f;border:1px solid var(--line);
+  border-radius:10px;padding:.65rem .75rem;color:#bfe6ef;overflow-x:auto;white-space:nowrap;
+}
+.code .c{color:var(--text-faint)}
+
+/* ============ Mission control showcase ============ */
+.mc{display:grid;grid-template-columns:1.15fr 1fr;gap:2rem;align-items:stretch}
+.mc-visual{
+  background:#000;border:1px solid var(--line-strong);border-radius:var(--radius);
+  overflow:hidden;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow);
+  position:relative;padding:1.5rem 1rem;
+}
+.mc-visual img{width:100%;height:auto;filter:drop-shadow(0 0 34px rgba(45,212,191,.3))}
+.mc-list{display:flex;flex-direction:column;gap:.65rem}
+.mc-item{
+  display:flex;gap:.8rem;align-items:flex-start;padding:.8rem .9rem;border:1px solid var(--line);
+  border-radius:12px;background:var(--panel);transition:border-color .25s,transform .25s;
+}
+.mc-item:hover{border-color:rgba(142,230,255,.35);transform:translateX(6px)}
+.mc-item b{color:var(--ice);font-family:var(--mono);font-size:.78rem;white-space:nowrap;padding-top:.1rem}
+.mc-item span{color:var(--text-dim);font-size:.88rem}
+
+/* ============ Commands ============ */
+.cmd-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:.75rem}
+.cmd-row{
+  display:flex;align-items:center;justify-content:space-between;gap:1rem;
+  background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:.68rem .9rem;
+}
+.cmd-row code{font-family:var(--mono);font-size:.82rem;color:var(--ice);white-space:nowrap}
+.cmd-row span{color:var(--text-dim);font-size:.82rem;flex:1}
+.copy-btn{
+  background:transparent;border:1px solid var(--line-strong);color:var(--text-dim);cursor:pointer;
+  border-radius:8px;padding:.32rem .55rem;font-size:.68rem;font-family:var(--mono);
+  transition:all .2s;white-space:nowrap;
+}
+.copy-btn:hover{border-color:var(--teal);color:var(--teal)}
+.copy-btn.done{border-color:var(--teal);color:#06251d;background:var(--teal)}
+
+/* ============ Why band ============ */
+.why{
+  max-width:1200px;margin:0 auto;padding:0 1.5rem 5rem;
+}
+.why-inner{
+  border:1px solid var(--line-strong);border-radius:var(--radius);overflow:hidden;
+  background:linear-gradient(135deg,#0d1516 0%,#0b1016 55%,#0e0b16 100%);
+  padding:2.4rem;box-shadow:var(--shadow);
+}
+.why-inner h2{margin-bottom:1rem}
+.why-cols{display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-top:1.6rem;align-items:start}
+.why-col h3{font-size:.78rem;font-family:var(--mono);letter-spacing:.25em;color:var(--text-faint);text-transform:uppercase;margin-bottom:.7rem}
+.why-col pre{
+  font-family:var(--mono);font-size:.72rem;background:#060608;border:1px solid var(--line);
+  border-radius:10px;padding:.8rem .9rem;overflow-x:auto;color:#9fb4c9;line-height:1.55;
+}
+.why-col pre .g{color:#34d399}.why-col pre .y{color:#f4c069}.why-col pre .b{color:#8ee6ff}
+
+/* ============ Blueprint figure ============ */
+.blueprint{
+  margin-top:2rem;border:1px solid var(--line-strong);border-radius:12px;overflow:hidden;
+  background:#0d0d10;box-shadow:var(--shadow)
+}
+.blueprint img{width:100%;height:auto;display:block}
+.blueprint figcaption{
+  font-family:var(--mono);font-size:.62rem;letter-spacing:.22em;color:var(--text-faint);
+  padding:.75rem 1rem;border-top:1px solid var(--line);text-align:center;text-transform:uppercase;
+}
+
+/* ============ Final CTA ============ */
+.final{max-width:1200px;margin:0 auto;padding:0 1.5rem 6rem;text-align:center}
+.final-inner{
+  position:relative;border-radius:calc(var(--radius) + 4px);padding:3.4rem 2rem;overflow:hidden;
+  background:#000;border:1px solid rgba(45,212,191,.3);
+  box-shadow:0 30px 80px rgba(0,0,0,.6),0 0 120px rgba(45,212,191,.14) inset;
+}
+.final h2{font-size:clamp(1.8rem,4vw,2.8rem)}
+.final p{color:var(--text-dim);margin:.9rem auto 1.8rem;max-width:34rem}
+
+/* ============ Footer ============ */
+footer{border-top:1px solid var(--line);background:rgba(10,10,12,.85)}
+.foot-inner{max-width:1200px;margin:0 auto;padding:2.2rem 1.5rem;display:flex;justify-content:space-between;gap:2rem;flex-wrap:wrap;align-items:center;font-size:.84rem;color:var(--text-faint)}
+.foot-brand{display:flex;align-items:center;gap:.6rem;color:var(--text-dim)}
+.foot-links{display:flex;gap:1.4rem;list-style:none}
+.foot-links a{color:var(--text-dim);text-decoration:none}
+.foot-links a:hover{color:var(--ice)}
+
+/* ============ Reveal animations ============ */
+.reveal{opacity:0;transform:translateY(34px);transition:opacity .7s cubic-bezier(.22,1,.36,1),transform .7s cubic-bezier(.22,1,.36,1)}
+.reveal.in{opacity:1;transform:none}
+.reveal[data-delay="1"]{transition-delay:.08s}
+.reveal[data-delay="2"]{transition-delay:.16s}
+.reveal[data-delay="3"]{transition-delay:.24s}
+.reveal[data-delay="4"]{transition-delay:.32s}
+.reveal[data-delay="5"]{transition-delay:.40s}
+@media (prefers-reduced-motion:reduce){
+  .reveal{opacity:1;transform:none;transition:none}
+}
+
+/* ============ Responsive ============ */
+@media (max-width:1024px){
+  .cards,.steps{grid-template-columns:repeat(2,1fr)}
+  .mc{grid-template-columns:1fr}
+  .why-cols{grid-template-columns:1fr}
+}
+@media (max-width:860px){
+  .hero{grid-template-columns:1fr;padding-top:7rem;min-height:auto;row-gap:2.5rem}
+  .nav-links{display:none}
+  .cards,.steps{grid-template-columns:1fr}
+  .cmd-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<div class="ambient" aria-hidden="true"><div class="grid-drift"></div></div>
+
+<nav class="nav" id="top" aria-label="Primary">
+  <div class="nav-inner">
+    <a class="brand" href="#top">
+      <img class="brand-icon" src="assets/icon-64.png" alt="" width="34" height="34">
+      <span class="brand-name">creator</span>
+      <span class="brand-tag">v0.1.0</span>
+    </a>
+    <ul class="nav-links">
+      <li><a href="#features">Features</a></li>
+      <li><a href="#how-it-works">How it Works</a></li>
+      <li><a href="#mission-control">Mission Control</a></li>
+      <li><a href="#commands">Commands</a></li>
+    </ul>
+    <a class="btn btn-primary" href="https://github.com/DERYK-RYLOY/creator" target="_blank" rel="noopener noreferrer">Get Started
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+    </a>
+  </div>
+</nav>
+
+<main id="main">
+  <!-- ============ HERO ============ -->
+  <header class="hero">
+    <div class="hero-copy">
+      <div class="eyebrow">Terminal-first · Open source · MIT</div>
+      <h1>The terminal agent that <span class="grad">never floods</span> its context.</h1>
+      <p class="lede">Creator is an autonomous, <strong>terminal-first IDE and agent</strong> that turns massive outputs into <strong>small digests with handles</strong>. Detail is pulled on demand — your context stays sharp, even on 8&nbsp;MB of failing tests.</p>
+      <div class="cta-row">
+        <a class="btn btn-primary btn-big" href="https://github.com/DERYK-RYLOY/creator" target="_blank" rel="noopener noreferrer">Get Creator on GitHub
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+        <a class="btn btn-ghost btn-big" href="#how-it-works">How it works</a>
+      </div>
+      <div class="hero-stats" aria-label="Creator at a glance">
+        <div><b>35</b><span>themes</span></div>
+        <div><b>35</b><span>highlight lenses</span></div>
+        <div><b>37</b><span>agent tools</span></div>
+        <div><b>MCP</b><span>native server</span></div>
+      </div>
+    </div>
+    <div class="hero-visual float">
+      <div class="hero-card">
+        <div class="ring" aria-hidden="true"></div>
+        <figure>
+          <img src="assets/creator-scifi.png" alt="Creator — the word CREATOR drawn as a white wireframe sci-fi logo" width="1600" height="783" fetchpriority="high" decoding="async">
+          <figcaption><span>creator — mission control</span><span>wordmark v1</span></figcaption>
+        </figure>
+      </div>
+    </div>
+  </header>
+
+  <!-- ============ TERMINAL DEMO ============ -->
+  <div class="demo-wrap reveal">
+    <div class="terminal" role="img" aria-label="Animated demo of a Creator session: asks why the build fails, gets a digest with a handle, tests pass">
+      <div class="terminal-bar">
+        <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+        <span class="terminal-title">zsh — creator run</span>
+      </div>
+      <div class="terminal-body" id="terminal-body"></div>
+    </div>
+  </div>
+
+  <!-- ============ FEATURES ============ -->
+  <section class="section" id="features" aria-labelledby="features-title">
+    <div class="section-head">
+      <div>
+        <div class="section-tag">/ features</div>
+        <h2 id="features-title">Built for serious engineering,<br>not demoware.</h2>
+      </div>
+      <p>Every feature exists because a real agent drowned in context, a real diff needed review, or a real build needed a gate.</p>
+    </div>
+    <div class="cards">
+      <article class="card reveal" data-delay="1">
+        <div class="card-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8ee6ff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h10M4 18h7"/></svg></div>
+        <h3>Digest + Handle</h3>
+        <p>No raw command output ever reaches the model. Output lands on disk as an artifact and comes back as a tiny <code>digest + [handle]</code> you page with <code>out()</code>.</p>
+      </article>
+      <article class="card reveal" data-delay="2">
+        <div class="card-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2dd4bf" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg></div>
+        <h3>Mission Control</h3>
+        <p>A full-screen terminal IDE: welcome hero, fuzzy palette (<code>F1</code>), 35 highlight lenses for the conversation, sidebar with live tokens, and mouse support — all in <code>creator tui</code>.</p>
+      </article>
+      <article class="card reveal" data-delay="3">
+        <div class="card-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#c084fc" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="12" cy="18" r="2.5"/><path d="M8.5 6h7M6.7 8.2l3.6 7.4M17.3 8.2l-3.6 7.4"/></svg></div>
+        <h3>Delegation</h3>
+        <p>Fork isolated sub-agents with fresh contexts. Profiles — <code>explorer</code>, <code>planner</code>, <code>reviewer</code>, <code>editor</code> — curate toolsets the spawn can never escape.</p>
+      </article>
+      <article class="card reveal" data-delay="1">
+        <div class="card-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+        <h3>Verification-Gated Tasks</h3>
+        <p>A persistent task board with dependencies, where a task only closes when its <strong>verify command exits 0</strong> — with receipts to prove it.</p>
+      </article>
+      <article class="card reveal" data-delay="2">
+        <div class="card-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f4c069" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z"/><path d="M12 12l8-4.5M12 12v9M12 12L4 7.5"/></svg></div>
+        <h3>Lua Plugins &amp; Hooks</h3>
+        <p>Extend the toolset and intercept every tool call with Lua. Workspace plugins stay untrusted until you opt in — <code>--workspace-plugins</code> is off by default.</p>
+      </article>
+      <article class="card reveal" data-delay="3">
+        <div class="card-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8ee6ff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7l8-4 8 4-8 4-8-4z"/><path d="M4 12l8 4 8-4M4 17l8 4 8-4" opacity=".65"/></svg></div>
+        <h3>MCP Native</h3>
+        <p>The exact same toolset — policy-checked, budget-clipped — is served over <strong>MCP on stdio</strong>. Any MCP client can drive Creator's hands.</p>
+      </article>
+    </div>
+  </section>
+
+  <!-- ============ HOW IT WORKS ============ -->
+  <section class="section" id="how-it-works" aria-labelledby="hiw-title" style="padding-top:0">
+    <div class="section-head">
+      <div>
+        <div class="section-tag">/ how it works</div>
+        <h2 id="hiw-title">Zero to agent in three steps.</h2>
+      </div>
+      <p>No config cathedral. One binary, one env var, one command.</p>
+    </div>
+    <div class="steps">
+      <div class="step reveal" data-delay="1">
+        <h3>Install</h3>
+        <p>One line — no Go, no admin, no PATH editing.</p>
+        <div class="code"><span class="c"># macOS / Linux</span><br>curl -fsSL https://raw.githubusercontent.com/DERYK-RYLOY/creator/main/install.sh | sh<br><br><span class="c"># Windows (PowerShell)</span><br>irm https://raw.githubusercontent.com/DERYK-RYLOY/creator/main/install.ps1 | iex</div>
+      </div>
+      <div class="step reveal" data-delay="2">
+        <h3>Connect a model</h3>
+        <p>Any of 17+ providers — or a fully local model. Pollinations Free needs no key at all.</p>
+        <div class="code"><span class="c"># pick your backend</span><br>export ANTHROPIC_API_KEY=sk-…<br><span class="c"># or: export POLLINATIONS_API_KEY=sk_…</span></div>
+      </div>
+      <div class="step reveal" data-delay="3">
+        <h3>Run it</h3>
+        <p>Mission control for the full-screen IDE, or the headless one-liner.</p>
+        <div class="code"><span class="c"># full-screen IDE</span><br>creator<br><span class="c"># headless agent</span><br>creator run "add tests for internal/reduce"</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ MISSION CONTROL ============ -->
+  <section class="section" id="mission-control" aria-labelledby="mc-title" style="padding-top:0">
+    <div class="section-head">
+      <div>
+        <div class="section-tag">/ mission control</div>
+        <h2 id="mc-title">An IDE that lives<br>where you already work.</h2>
+      </div>
+      <p>Every pixel is in the repo. No telemetry, no account, no electron.</p>
+    </div>
+    <div class="mc">
+      <div class="mc-visual reveal" data-delay="1">
+        <img src="assets/creator-gear.png" alt="Creator — the word CREATOR built from teal-outlined mechanical gear letters" width="1600" height="686" loading="lazy" decoding="async">
+      </div>
+      <div class="mc-list">
+        <div class="mc-item reveal" data-delay="1"><b>35</b><span>built-in themes — from Volcanic Ember to Imperial Jade to a readable day theme, with a live preview overlay and config persistence.</span></div>
+        <div class="mc-item reveal" data-delay="2"><b>35</b><span>highlight lenses — one keystroke (<code style="font-family:var(--mono);color:var(--ice)">ctrl+g</code>) cycles filters for errors, secrets, TODOs, URLs, risky ops — matched words light up in the conversation.</span></div>
+        <div class="mc-item reveal" data-delay="3"><b>ctrl+f</b><span>in-transcript search with live match counter, next/prev navigation and match highlighting.</span></div>
+        <div class="mc-item reveal" data-delay="4"><b>F1</b><span>fuzzy command palette with frecency (recent commands first), categories, shortcuts, and all 35 commands one keystroke away.</span></div>
+        <div class="mc-item reveal" data-delay="5"><b>sidebar</b><span>live session state — turns, tools, tokens in/out — plus workspace, branch and the keymap you always forget.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ COMMANDS ============ -->
+  <section class="section" id="commands" aria-labelledby="cmd-title" style="padding-top:0">
+    <div class="section-head">
+      <div>
+        <div class="section-tag">/ command line</div>
+        <h2 id="cmd-title">One binary, three personalities.</h2>
+      </div>
+      <p>Click any row to copy the command.</p>
+    </div>
+    <div class="cmd-grid" id="cmd-grid"></div>
+  </section>
+
+  <!-- ============ WHY ============ -->
+  <section class="why" aria-labelledby="why-title">
+    <div class="why-inner reveal">
+      <div class="section-tag">/ why creator</div>
+      <h2 id="why-title">Context is the budget.<br>Spend it on thinking, not on logs.</h2>
+      <div class="why-cols">
+        <div class="why-col">
+          <h3>Everyone else</h3>
+          <pre>$ go test ./...
+<span class="y">… 91,240 lines of output dumped into context …</span>
+FAIL
+model: spends 40k tokens re-reading noise</pre>
+        </div>
+        <div class="why-col">
+          <h3>creator</h3>
+          <pre>$ go test ./...
+<span class="b">job j_01h9x2 · success · exit 0 · 312ms · 8.4MB</span>
+<span class="g">A-300  pkg/a.go:12: cannot use value (int) as string</span>
+<span class="g">A-41   pkg/b.go:9: undefined: helper</span>
+<span class="y">── last lines:</span>
+FAIL github.com/acme/app [build failed]
+[handle=j_01h9x2 · 38 of 91240 lines · out(handle, mode="grep",
+ pattern="cannot use")]</pre>
+        </div>
+      </div>
+      <figure class="blueprint reveal" data-delay="2">
+        <img src="assets/blueprint-coreloop.jpg" alt="Creator core loop — an engineering blueprint of the whole agent: PROMPT, PROVIDER CALL, TOOL CALLS, OBSERVATIONS around the C-shaped gear engine" width="1600" height="879" loading="lazy" decoding="async">
+        <figcaption>CREATOR — CORE LOOP — EXPLODED VIEW · THE WHOLE SYSTEM ON ONE SHEET</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- ============ FINAL CTA ============ -->
+  <section class="final">
+    <div class="final-inner reveal">
+      <h2>Stop flooding your context.<br><span class="grad">Start shipping.</span></h2>
+      <p>Creator is free, open source (MIT), and runs anywhere Go does — Windows, macOS, Linux.</p>
+      <a class="btn btn-primary btn-big" href="https://github.com/DERYK-RYLOY/creator" target="_blank" rel="noopener noreferrer">Clone the repo
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+    </div>
+  </section>
+</main>
+
+<!-- ============ FOOTER ============ -->
+<footer>
+  <div class="foot-inner">
+    <div class="foot-brand">
+      <img class="brand-icon" style="width:26px;height:26px;border-radius:7px" src="assets/icon-64.png" alt="" width="26" height="26">
+      <span><b>creator</b> · MIT · © 2026</span>
+    </div>
+    <ul class="foot-links">
+      <li><a href="#features">Features</a></li>
+      <li><a href="#how-it-works">How it Works</a></li>
+      <li><a href="#commands">Commands</a></li>
+      <li><a href="https://github.com/DERYK-RYLOY/creator" target="_blank" rel="noopener noreferrer">GitHub</a></li>
+    </ul>
+    <span>Built for the future of terminal-first development.</span>
+  </div>
+</footer>
+
+<script>
+/* ================================================================
+   Creator — github/landing page controller.
+   Vanilla JS. Everything respects prefers-reduced-motion.
+   ================================================================ */
+'use strict';
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ---------- nav scroll state ---------- */
+const nav = document.querySelector('.nav');
+const onScroll = () => nav.classList.toggle('scrolled', window.scrollY > 24);
+window.addEventListener('scroll', onScroll, { passive: true });
+onScroll();
+
+/* ---------- reveal on scroll ---------- */
+const revealEls = document.querySelectorAll('.reveal');
+if (reduceMotion || !('IntersectionObserver' in window)) {
+  revealEls.forEach(el => el.classList.add('in'));
+} else {
+  const io = new IntersectionObserver(entries => {
+    for (const entry of entries) {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('in');
+        io.unobserve(entry.target);
+      }
+    }
+  }, { threshold: 0.12, rootMargin: '0px 0px -8% 0px' });
+  revealEls.forEach(el => io.observe(el));
+  /* safety net: if something above never intersects (hidden tab, print,
+     exotic viewports), never leave content invisible */
+  window.addEventListener('load', () => setTimeout(() => {
+    revealEls.forEach(el => el.classList.add('in'));
+  }, 1200), { once: true });
+}
+
+/* ---------- terminal demo: a REAL typed session ---------- */
+const demoLines = [
+  { kind: 'cmd',  text: 'creator run "why is the build failing?"' },
+  { kind: 'out',  text: 'job j_01h9x2 · success · exit 0 · 312ms · 8.4MB' },
+  { kind: 'out',  text: 'A-300  pkg/a.go:12: cannot use value (int) as string' },
+  { kind: 'out',  text: '[handle=j_01h9x2 · 38 of 91240 lines · out() to page]' },
+  { kind: 'cmd',  text: 'creator run "run the tests and fix the failure"' },
+  { kind: 'out',  text: 'job j_01h9y9 · success · exit 0 · 1.2s · 4.1MB' },
+  { kind: 'ok',   text: 'PASS  github.com/acme/app  0.31s' },
+  { kind: 'cmd',  text: 'creator' },
+  { kind: 'info', text: 'mission control — F1 for commands · ctrl+g for highlight lenses' },
+];
+const termBody = document.getElementById('terminal-body');
+
+function renderStaticDemo() {
+  termBody.innerHTML = '';
+  for (const line of demoLines) {
+    const row = document.createElement('div');
+    row.className = 't-line';
+    if (line.kind === 'cmd') {
+      row.innerHTML = '<span class="t-prompt">$</span><span class="t-cmd"></span>';
+      row.querySelector('.t-cmd').textContent = line.text;
+    } else {
+      row.innerHTML = '<span class="t-out"></span>';
+      row.querySelector('.t-out').textContent = line.text;
+      if (line.kind === 'ok') row.querySelector('.t-out').className = 't-ok';
+      if (line.kind === 'info') row.querySelector('.t-out').className = 't-info';
+    }
+    termBody.appendChild(row);
+  }
+}
+
+if (reduceMotion) {
+  renderStaticDemo();
+} else {
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  let demoRun = 0;
+  async function playDemo() {
+    const myRun = ++demoRun;
+    termBody.innerHTML = '';
+    for (const line of demoLines) {
+      if (myRun !== demoRun) return;               // a newer run took over
+      if (document.hidden) { await sleep(400); continue; } // don't animate in the background
+      const row = document.createElement('div');
+      row.className = 't-line';
+      if (line.kind === 'cmd') {
+        row.innerHTML = '<span class="t-prompt">$</span><span class="t-cmd"></span><span class="caret"></span>';
+        termBody.appendChild(row);
+        const cmdEl = row.querySelector('.t-cmd');
+        for (const ch of line.text) {
+          if (myRun !== demoRun) return;
+          cmdEl.textContent += ch;
+          await sleep(24 + Math.random() * 40);
+        }
+        row.querySelector('.caret').remove();
+        await sleep(260);
+      } else {
+        const cls = line.kind === 'ok' ? 't-ok' : line.kind === 'info' ? 't-info' : 't-out';
+        row.innerHTML = `<span class="${cls}"></span>`;
+        row.querySelector('span').textContent = line.text;
+        termBody.appendChild(row);
+        await sleep(140);
+      }
+    }
+    const done = document.createElement('div');
+    done.className = 't-line';
+    done.innerHTML = '<span class="t-prompt">$</span><span class="caret"></span>';
+    termBody.appendChild(done);
+    await sleep(3600);
+    if (myRun === demoRun) playDemo();              // loop the demo
+  }
+  playDemo();
+}
+
+/* ---------- copy-to-clipboard on command rows ---------- */
+const commands = [
+  ['creator', 'open mission control (the full-screen IDE)'],
+  ['creator tui --policy strict', 'mission control with manual permissions'],
+  ['creator run "<task>"', 'headless agent — reads, edits, verifies'],
+  ['creator shell "go test ./..."', 'policy-checked job runner, no model'],
+  ['creator mcp', 'serve the whole toolset over MCP on stdio'],
+  ['creator install', 'build creator, creator-tui & ctr into ~/.local/bin'],
+  ['ctr "<task>"', 'the short alias, same engine'],
+  ['creator profiles', 'list delegate profiles (explorer, planner, …)'],
+];
+const grid = document.getElementById('cmd-grid');
+for (const [cmd, desc] of commands) {
+  const row = document.createElement('div');
+  row.className = 'cmd-row';
+  const code = document.createElement('code');
+  code.textContent = cmd;
+  const span = document.createElement('span');
+  span.textContent = desc;
+  const btn = document.createElement('button');
+  btn.className = 'copy-btn';
+  btn.type = 'button';
+  btn.textContent = 'copy';
+  btn.setAttribute('aria-label', 'Copy: ' + cmd);
+  btn.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(cmd);
+      btn.textContent = 'copied';
+      btn.classList.add('done');
+      setTimeout(() => { btn.textContent = 'copy'; btn.classList.remove('done'); }, 1600);
+    } catch (_) {
+      btn.textContent = 'select+ctrl+c';
+      setTimeout(() => { btn.textContent = 'copy'; }, 1800);
+    }
+  });
+  row.append(code, span, btn);
+  grid.appendChild(row);
+}
+</script>
+</body>
+</html>
