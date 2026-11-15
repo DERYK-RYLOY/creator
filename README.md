@@ -5,6 +5,10 @@
 </p>
 
 <p align="center">
+  <a href="http://127.0.0.1:8080/assets/creator-animation.html">▶ the same animation, live and full-screen</a> · <code>go run ./cmd/webserver</code>
+</p>
+
+<p align="center">
   <a href="https://github.com/DERYK-RYLOY/creator/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/DERYK-RYLOY/creator/ci.yml?branch=main&label=tests" alt="tests"></a>
   <a href="https://github.com/DERYK-RYLOY/creator/releases"><img src="https://img.shields.io/github/v/release/DERYK-RYLOY/creator?label=release" alt="release"></a>
   <img src="https://img.shields.io/github/go-mod/go-version/DERYK-RYLOY/creator" alt="go version">
