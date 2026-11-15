@@ -381,8 +381,476 @@ footer{border-top:1px solid var(--line);background:rgba(10,10,12,.85)}
       <div class="hero-card">
         <div class="ring" aria-hidden="true"></div>
         <figure>
-          <img src="assets/creator-banner.gif" alt="Creator - the word CREATOR rendered as Unicode braille dots; nuclear shockwave pulses roll through the letters while the palette crossfades through 35 real themes on an endless loop" width="1816" height="344" fetchpriority="high" decoding="async">
-          <figcaption><span>creator — mission control</span><span>wordmark — unicode braille, the tui hero engine</span></figcaption>
+          <style>
+  :root{--tc:#54ff96}
+  .live-banner{position:relative}
+  .live-banner canvas{display:block;width:100%;height:auto;aspect-ratio:1816/344;background:transparent;cursor:pointer;position:relative;z-index:1}
+  .live-banner .theme-hud{position:absolute;z-index:2;left:0;right:0;bottom:1.15rem;display:flex;flex-direction:column;align-items:center;gap:3px;font-family:var(--mono);text-transform:uppercase;opacity:0;pointer-events:none;white-space:nowrap;transform:translateY(8px);transition:opacity .45s ease,transform .45s ease}
+  .live-banner .theme-hud.show{opacity:1;transform:translateY(0)}
+  .live-banner .hud-top{font-size:.42rem;letter-spacing:.3em;text-indent:.3em;color:var(--tc);text-shadow:0 0 10px var(--tc);transition:color .8s ease}
+  .live-banner .hud-top b{font-weight:700}
+  .live-banner .hud-top .dim{opacity:.5}
+  .live-banner .hud-sub{font-size:.32rem;letter-spacing:.26em;text-indent:.26em;color:rgba(255,255,255,.5)}
+  .live-banner .hud-swatches{display:flex;gap:.4rem;padding:.22rem .45rem;border:1px solid rgba(255,255,255,.1);border-radius:.3rem;background:rgba(6,8,14,.42)}
+  .live-banner .sw{display:flex;align-items:center;gap:.22rem;font-size:.33rem;letter-spacing:.03em;color:rgba(255,255,255,.55)}
+  .live-banner .sw i{width:.45rem;height:.45rem;border-radius:1px;border:1px solid rgba(255,255,255,.25)}
+  .live-banner .theme-rail{position:absolute;z-index:2;left:0;right:0;bottom:0;height:3px;display:flex;gap:2px;padding:0 2px;pointer-events:none;opacity:.8}
+  .live-banner .theme-rail i{flex:1;background:rgba(255,255,255,.12);transition:background .5s ease,box-shadow .5s ease}
+  .live-banner .theme-rail i.on{background:var(--tc);box-shadow:0 0 6px var(--tc)}
+</style>
+<div class="live-banner" id="liveBanner">
+          <canvas id="dotCanvas" role="img" aria-label="The word CREATOR in braille dots. A shockwave repeatedly radiates outward through the letters while the palette crossfades through 35 real themes."></canvas>
+          <div class="theme-hud" id="themeHud">
+            <div class="hud-top">THEME&nbsp;<b id="themeNum">01</b><span class="dim">/35</span>&nbsp;&middot;&nbsp;<span id="themeName">NORD</span></div>
+            <div class="hud-sub" id="themeMeta">CIRCLE DOTS &middot; FX: DUST MOTES &middot; GLOW 1.00&times;</div>
+            <div class="hud-swatches" id="themeSwatches"></div>
+          </div>
+          <div class="theme-rail" id="themeRail" aria-hidden="true"></div>
+          <noscript><img src="assets/creator-banner.gif" alt="Creator — the word CREATOR rendered as Unicode braille dots on an endless loop of 35 real themes" width="1816" height="344"></noscript>
+        </div>
+<script>
+(() => {
+"use strict";
+
+/* ── Embedded art (base64 → UTF-8) — always byte-exact ───────────────── */
+const ART_B64 = "IOKigOKjvuKjv+Kjv+Kjv+Kjv+Kjv+Kjv+Kjv+Kjv+Kjv+Kjv+Khn+KggSDioIjioLvio7/io7/io7/io7/io7/io7/io7/io7/io7/io7/io7/io6bioYAg4qK44qO/4qO/4qO/4qO/4qO/4qO/4qO/4qO/4qO/4qO/4qO/4qO/4qGf4qCBICAgICAg4qCg4qO/4qO/4qO/4qOGICAgIOKgiOKgu+Kjv+Kjv+Kjv+Kjv+Kjv+Kjv+Kjv+Kjv+Kjv+Kjv+Kjv+Kjv+Kjv+Khv+KgiyDiooAg4qC74qO/4qO/4qO/4qO/4qO/4qO/4qO/4qO/4qO/4qOm4qGAICAg4qC74qO/4qO/4qO/4qO/4qO/4qO/4qO/4qO/4qO/4qO/4qO/4qOm4qGACuKjtOKjv+Kjv+Kjv+Kgv+Kgv+Kgv+Kgv+Kgv+Kgv+Kgv+Kgv+KgiyAgIOKjt+KjhOKgmOKgv+Kgv+Kgv+Kgv+Kgv+Kgv+Kgv+Kgv+Kjv+Kjv+Kjv+KjtyDiorjio7/io7/io7/iob/ioL/ioL/ioL/ioL/ioL/ioL/ioL/ioIsgICAgICAg4qKg4qGE4qC54qO/4qO/4qO/4qOGICAgICDioJnioL/ioL/ioL/ioL/io7/io7/ioL/ioL/ioL/ioL/ioL/ioJ/ioIEg4qKg4qO/4qOn4qGA4qCZ4qC/4qC/4qC/4qC/4qC/4qC/4qC/4qO/4qO/4qO34qGEIOKiuOKjhOKgiOKgu+Kgv+Kgv+Kgv+Kgv+Kgv+Kgv+Kgv+Kjv+Kjv+Kjv+Kjvwrio7/io7/io7/io78gICAgICAgICAgICDio7/io7/io7fioYAgICAgICAg4qO/4qO/4qO/4qO/IOKgmOKgm+Kgm+Kjv+KhhyAgICAgICAgICAgICAg4qKA4qO+4qO/4qGE4qC54qO/4qO/4qO/4qOGICAgICAgICAg4qO/4qO/4qO34qGAICAgICAg4qK44qO/4qO/4qO/ICAgICAgICDio7/io7/io7/ioYcg4qK44qO/4qO34qOEICAgICAgIOKjv+Kjv+Kjv+Kjvwrio7/io7/io7/io78gICAgICAgICAgICDio7/io7/io7/io78g4qKw4qO24qO24qO24qO24qO24qO/4qO/4qO/4qG/IOKisOKjv+Kjv+Kjv+Kjv+Kjv+Kjv+Kjv+Kjv+Kjv+Khn+KggSAgICAgIOKigOKjvuKjv+Kjv+KhtyDiorvio7/io7/io7/io4YgICAgICAgIOKjv+Kjv+Kjv+KhhyAgICAgIOKiuOKjv+Kjv+KjvyAgICAgICAg4qO/4qO/4qO/4qGHIOKiuOKjv+Kjv+KjvyDiorDio7bio7bio7bio7bio7bio7/io7/io7/io78K4qO/4qO/4qO/4qO/ICAgICAgICAgICAg4qO/4qO/4qO/4qO/IOKiuOKjv+Kjv+Kjv+Kjv+Kjv+Kjv+Kjv+Kgn+KggSDiorjio7/io7/io7/iob/ioL/ioL/ioL/ioL/ioIsgICAgICAg4qKA4qO+4qO/4qO/4qG/4qCBICDiorvio7/io7/io7/ioYQgICAgICAg4qO/4qO/4qO/4qGHICAgICAg4qK44qO/4qO/4qO/ICAgICAgICDio7/io7/io7/ioYcg4qK44qO/4qO/4qO/IOKguOKjv+Kjv+Kjv+Kjv+Kjv+Kjv+Kjv+Kgn+KggQrio7/io7/io7/io78gICAgICAgICAgICDio7/io7/io7/io78gIOKgmeKiv+Kjv+Kjv+Kjt+KjhCAgICDiorjio7/io7/io7/ioYcgICAgICAgICAgIOKigOKjvuKjv+Kjv+Kjv+KggSAg4qOg4qO24qO/4qO/4qO/4qO/4qGEICAgICAg4qO/4qO/4qO/4qGHICAgICAg4qK44qO/4qO/4qO/ICAgICAgIOKjoOKjv+Kjv+Kjv+KhhyDiorjio7/io7/io78gIOKgiOKgu+Kjv+Kjv+Kjt+KjhArior/io7/io7/io7/io7bio7bio7bio7bio7bio7bio7bio7bio7bioZYgIOKjv+Kjv+Kjv+KjvyAgICDioJnior/io7/io7/io7fio4QgIOKiuOKjv+Kjv+Kjv+Kjt+KjtuKjtuKjtuKjtuKjtuKjtuKjtuKjtuKhtiDiooDio77io7/io7/io7/ioIMg4qKg4qO+4qO/4qO/4qO/4qO/4qO/4qO/4qO/4qGEICAgICDio7/io7/io7/ioYcgICAgICDioJjior/io7/io7/io7bio7bio7bio7bio7bio7bio77io7/io7/io7/iob/ioIMg4qK44qO/4qO/4qO/ICAgIOKgiOKgu+Kjv+Kjv+Kjt+KjhArioIjioLvio7/io7/io7/io7/io7/io7/io7/io7/io7/iob/ioIsgICDior/io7/io7/io78gICAgICDioJnior/io7/io7/io7fioYDioLjio7/io7/io7/io7/io7/io7/io7/io7/io7/io7/iob/ioIsgIOKjvOKjv+Kjv+Khv+KggyAgICAgICAg4qK/4qO/4qO/4qO/4qGEICAgIOKgmeKiv+Kjv+KhhyAgICAgICAg4qC74qO/4qO/4qO/4qO/4qO/4qO/4qO/4qO/4qO/4qG/4qCLICAg4qK44qO/4qO/4qO/ICAgICAg4qCI4qC74qO/4qO/4qO34qGECiAgICAgICAgICAgICAgICAgICAgICAgICAgICDioJnior/io7/ioYcgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIOKgiOKgu+KhhyAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg4qCI4qC74qO/4qGHCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIOKgmeKgpyAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIOKgiOKgvw==";
+const ART = new TextDecoder("utf-8").decode(
+  Uint8Array.from(atob(ART_B64), c => c.charCodeAt(0))
+);
+const LINES = ART.split("\n");
+const DOT_BITS = [[0,0,0x01],[1,0,0x02],[2,0,0x04],[3,0,0x40],
+                  [0,1,0x08],[1,1,0x10],[2,1,0x20],[3,1,0x80]];
+const DOT_W = Math.max(...LINES.map(l => l.length)) * 2;
+const DOT_H = LINES.length * 4;
+
+
+/* ═══ SHOCKWAVE ENGINE ═══════════════════════════════════════════════ */
+const canvas = document.getElementById("dotCanvas");
+const ctx = canvas.getContext("2d");
+
+const PITCH = 8;
+const PAD   = 12;
+
+const LEVELS = 24, BRIGHT_T = 0.42;
+
+/* ═══ 35-THEME ROTATION ENGINE ═══════════════════════════════════════
+   Every shockwave detonation crossfades the whole word to the next
+   palette. After theme 35 the cycle wraps to theme 1 — forever.      */
+const THEMES = [
+  { name: "NORD",              bg: "#2E3440", dim: "#3B4252", lit: "#88C0D0", alt: "#A3BE8C", hot: "#ECEFF4", shape: "circle",  fx: "motes",    glow: 1.0  },
+  { name: "DRACULA",           bg: "#282A36", dim: "#44475A", lit: "#BD93F9", alt: "#8BE9FD", hot: "#F8F8F2", shape: "diamond", fx: "stars",    glow: 1.05 },
+  { name: "GRUVBOX DARK",      bg: "#282828", dim: "#3C3836", lit: "#FABD2F", alt: "#B8BB26", hot: "#FBF1C7", shape: "square",  fx: "embers",   glow: 1.0  },
+  { name: "SOLARIZED DARK",    bg: "#002B36", dim: "#073642", lit: "#2AA198", alt: "#B58900", hot: "#EEE8D5", shape: "circle",  fx: "motes",    glow: 0.95 },
+  { name: "TOKYO NIGHT",       bg: "#1A1B26", dim: "#292E42", lit: "#7AA2F7", alt: "#7DCFFF", hot: "#C0CAF5", shape: "square",  fx: "rain",     glow: 1.1  },
+  { name: "TOKYO NIGHT STORM", bg: "#24283B", dim: "#2F334D", lit: "#82AAFF", alt: "#BB9AF7", hot: "#C0CAF5", shape: "circle",  fx: "rain",     glow: 1.0  },
+  { name: "CATPPUCCIN MOCHA",  bg: "#1E1E2E", dim: "#313244", lit: "#CBA6F7", alt: "#89B4FA", hot: "#CDD6F4", shape: "diamond", fx: "stars",    glow: 1.1  },
+  { name: "CATPPUCCIN FRAPPE", bg: "#303446", dim: "#414559", lit: "#CA9EE6", alt: "#81C8BE", hot: "#C6D0F5", shape: "circle",  fx: "petals",   glow: 0.95 },
+  { name: "ROSE PINE",         bg: "#191724", dim: "#26233A", lit: "#EB6F92", alt: "#9CCFD8", hot: "#E0DEF4", shape: "diamond", fx: "petals",   glow: 1.05 },
+  { name: "ROSE PINE MOON",    bg: "#232136", dim: "#2A273F", lit: "#EA9A97", alt: "#C4A7E7", hot: "#E0DEF4", shape: "circle",  fx: "stars",    glow: 0.95 },
+  { name: "EVERFOREST DARK",   bg: "#2D353B", dim: "#343F44", lit: "#A7C080", alt: "#DBBC7F", hot: "#D3C6AA", shape: "square",  fx: "petals",   glow: 0.9  },
+  { name: "KANAGAWA WAVE",     bg: "#1F1F28", dim: "#2A2A37", lit: "#7E9CD8", alt: "#FF9E3B", hot: "#DCD7BA", shape: "circle",  fx: "rain",     glow: 1.05 },
+  { name: "KANAGAWA DRAGON",   bg: "#181616", dim: "#282727", lit: "#E6C384", alt: "#C4746E", hot: "#C5C9C5", shape: "square",  fx: "embers",   glow: 0.9  },
+  { name: "MONOKAI",           bg: "#272822", dim: "#3E3D32", lit: "#A6E22E", alt: "#F92672", hot: "#F8F8F2", shape: "square",  fx: "sparks",   glow: 1.0  },
+  { name: "ONE DARK",          bg: "#282C34", dim: "#2C313A", lit: "#61AFEF", alt: "#C678DD", hot: "#ABB2BF", shape: "circle",  fx: "sparks",   glow: 1.0  },
+  { name: "NIGHT OWL",         bg: "#011627", dim: "#0B2942", lit: "#82AAFF", alt: "#7FDBCA", hot: "#D6DEEB", shape: "circle",  fx: "stars",    glow: 1.0  },
+  { name: "PALENIGHT",         bg: "#292D3E", dim: "#2E3148", lit: "#C792EA", alt: "#89DDFF", hot: "#BABECA", shape: "diamond", fx: "stars",    glow: 1.05 },
+  { name: "MATERIAL OCEAN",    bg: "#0F111A", dim: "#1E2430", lit: "#84FFFF", alt: "#C099FF", hot: "#D5DEEB", shape: "ring",    fx: "motes",    glow: 1.0  },
+  { name: "AYU DARK",          bg: "#0B0E14", dim: "#11151C", lit: "#39BAE6", alt: "#FFB454", hot: "#E6E1CF", shape: "square",  fx: "sparks",   glow: 1.0  },
+  { name: "AYU MIRAGE",        bg: "#1F2430", dim: "#232833", lit: "#5CCFE6", alt: "#FFC666", hot: "#CBCCC6", shape: "ring",    fx: "motes",    glow: 0.95 },
+  { name: "GITHUB DARK",       bg: "#0D1117", dim: "#161B22", lit: "#58A6FF", alt: "#3FB950", hot: "#C9D1D9", shape: "square",  fx: "none",     glow: 0.95 },
+  { name: "GITHUB DIMMED",     bg: "#22272E", dim: "#2D333B", lit: "#539BF5", alt: "#57AB5A", hot: "#ADBAC7", shape: "square",  fx: "none",     glow: 0.9  },
+  { name: "SYNTHWAVE '84",     bg: "#262335", dim: "#2A2139", lit: "#FF7EDB", alt: "#36F9F6", hot: "#FDF5E4", shape: "ring",    fx: "sparks",   glow: 1.25 },
+  { name: "COBALT2",           bg: "#193549", dim: "#1F4662", lit: "#FFC600", alt: "#0088FF", hot: "#FFFFFF", shape: "square",  fx: "sparks",   glow: 1.1  },
+  { name: "HORIZON",           bg: "#1C1E26", dim: "#232530", lit: "#E95678", alt: "#FAB795", hot: "#D5D8DA", shape: "circle",  fx: "embers",   glow: 1.0  },
+  { name: "NIGHTFOX",          bg: "#192330", dim: "#212E3F", lit: "#719CD6", alt: "#F4A261", hot: "#CDCECF", shape: "circle",  fx: "motes",    glow: 0.95 },
+  { name: "ZENBURN",           bg: "#3F3F3F", dim: "#4F4F4F", lit: "#CC9393", alt: "#7F9F7F", hot: "#DCDCCC", shape: "square",  fx: "none",     glow: 0.85 },
+  { name: "ANDROMEDA",         bg: "#23262E", dim: "#2B2E36", lit: "#C586C0", alt: "#A9DC76", hot: "#D5CED9", shape: "circle",  fx: "stars",    glow: 1.0  },
+  { name: "THE MATRIX",        bg: "#0D0208", dim: "#0A2F12", lit: "#00FF41", alt: "#008F11", hot: "#DFFFE0", shape: "square",  fx: "katakana", glow: 1.15 },
+  { name: "TRON LEGACY",       bg: "#050A0F", dim: "#0A2A33", lit: "#00E5FF", alt: "#00B0FF", hot: "#E0FEFF", shape: "ring",    fx: "sparks",   glow: 1.15 },
+  { name: "BLADE RUNNER 2049", bg: "#1A1611", dim: "#2A241D", lit: "#FFB86B", alt: "#4CC9C0", hot: "#F8F0E3", shape: "square",  fx: "rain",     glow: 1.1  },
+  { name: "HALLOWEEN",         bg: "#1B0B2B", dim: "#2A1033", lit: "#FF7B00", alt: "#B967FF", hot: "#F3E5AB", shape: "diamond", fx: "embers",   glow: 1.1  },
+  { name: "CHRISTMAS",         bg: "#0F2E1F", dim: "#331F1A", lit: "#FF3B3B", alt: "#2ECC71", hot: "#FFF8E7", shape: "circle",  fx: "snow",     glow: 1.05 },
+  { name: "SAKURA",            bg: "#2A1823", dim: "#3A2230", lit: "#FF8FB1", alt: "#FFD3E0", hot: "#FFF0F5", shape: "circle",  fx: "petals",   glow: 1.0  },
+  { name: "DEEP SPACE",        bg: "#14082E", dim: "#241040", lit: "#B967FF", alt: "#05D9E8", hot: "#FFFFFF", shape: "diamond", fx: "stars",    glow: 1.15 }
+];
+const hx = h => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
+const TC = THEMES.map(t => ({
+  name: t.name, shape: t.shape, fx: t.fx, glow: t.glow,
+  raw: { bg: t.bg, dim: t.dim, lit: t.lit, alt: t.alt, hot: t.hot },
+  bg: hx(t.bg), dim: hx(t.dim), lit: hx(t.lit), alt: hx(t.alt), hot: hx(t.hot)
+}));
+const mix3 = (a, b, f) => [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f, a[2] + (b[2] - a[2]) * f];
+const rgba = (c, a) => "rgba(" + (c[0] | 0) + "," + (c[1] | 0) + "," + (c[2] | 0) + "," + a + ")";
+const THEME_FADE = 1.15; // seconds for the full palette crossfade
+let themeIdx = 0, fadeFrom = null, fadeStart = -10, tablesDirty = true;
+
+function currentColors(t) {
+  const target = TC[themeIdx];
+  if (!fadeFrom) return target;
+  let f = (t - fadeStart) / THEME_FADE;
+  f = f < 0 ? 0 : f > 1 ? 1 : f;
+  f = f * f * (3 - 2 * f); // smoothstep — ease in/out, no hard snaps
+  return { dim: mix3(fadeFrom.dim, target.dim, f), lit: mix3(fadeFrom.lit, target.lit, f), alt: mix3(fadeFrom.alt, target.alt, f), hot: mix3(fadeFrom.hot, target.hot, f) };
+}
+
+/* HUD + 35-segment progress rail */
+const themeHud = document.getElementById("themeHud");
+const themeNum = document.getElementById("themeNum");
+const themeNameEl = document.getElementById("themeName");
+const themeMetaEl = document.getElementById("themeMeta");
+const themeSwatches = document.getElementById("themeSwatches");
+const themeRail = document.getElementById("themeRail");
+const SHAPE_LABEL = { square: "SQUARE DOTS", circle: "CIRCULAR DOTS", ring: "RING DOTS", diamond: "DIAMOND DOTS", plus: "PLUS DOTS" };
+const FX_LABEL = { none: "NO AMBIENT FX", snow: "SNOW FIELD", embers: "EMBER RISE", rain: "NEON RAIN", katakana: "KATAKANA RAIN", stars: "TWINKLE FIELD", petals: "PETAL DRIFT", motes: "DUST MOTES", sparks: "SPARKS" };
+for (let i = 0; i < TC.length; i++) themeRail.appendChild(document.createElement("i"));
+function renderSwatches(raw) {
+  themeSwatches.innerHTML = ["bg", "dim", "lit", "alt", "hot"].map(k =>
+    '<span class="sw"><i style="background:' + raw[k] + '"></i>' + raw[k].toUpperCase() + "</span>"
+  ).join("");
+}
+let hudTimer = null;
+function updateThemeHud() {
+  const active = TC[themeIdx];
+  themeNum.textContent = String(themeIdx + 1).padStart(2, "0");
+  themeNameEl.textContent = active.name;
+  themeMetaEl.textContent = SHAPE_LABEL[active.shape] + " · FX: " + FX_LABEL[active.fx] + " · GLOW " + active.glow.toFixed(2) + "×";
+  renderSwatches(active.raw);
+  document.documentElement.style.setProperty("--tc", rgba(active.lit, 1));
+  const segs = themeRail.children;
+  for (let i = 0; i < segs.length; i++) segs[i].classList.toggle("on", i <= themeIdx);
+  themeHud.classList.add("show");
+  clearTimeout(hudTimer);
+  hudTimer = setTimeout(() => themeHud.classList.remove("show"), 3400);
+}
+
+function applyTheme(i) {
+  fadeFrom = currentColors(animTime);   // snapshot wherever the fade currently sits
+  themeIdx = ((i % TC.length) + TC.length) % TC.length;
+  fadeStart = animTime;
+  tablesDirty = true;
+  particles.length = 0;                 // ambient FX belongs to the theme — re-seed on change
+  updateThemeHud();
+}
+let nextTheme = 0;
+
+const dotScale = 1;
+let paused    = false;
+let animTime  = 0;
+let lastFrame = 0;
+let pulses    = [];
+const AUTO_INTERVAL = 2.8;
+let nextAuto = 0.8;
+
+const maxR = Math.hypot(DOT_W * PITCH, DOT_H * PITCH) / 2 + 80;
+
+/* dot lists rebuilt on demand */
+let raised = [];
+
+function buildDots() {
+  raised = [];
+  const ox = (PAD + DOT_W * PITCH / 2);
+  const oy = (PAD + DOT_H * PITCH / 2);
+  for (let r = 0; r < LINES.length; r++) {
+    const line = LINES[r];
+    for (let c = 0; c < line.length; c++) {
+      const bits = (line.charCodeAt(c) - 0x2800) & 0xff;
+      for (const [dy, dx, bit] of DOT_BITS) {
+        const x = PAD + c * PITCH * 2 + dx * PITCH + PITCH / 2;
+        const y = PAD + r * PITCH * 4 + dy * PITCH + PITCH / 2;
+        const dxo = x - ox, dyo = y - oy;
+        const dist = Math.hypot(dxo, dyo);
+        const dot = { x, y, dist, ux: dist > 0 ? dxo / dist : 1, uy: dist > 0 ? dyo / dist : 0, _p: 0, _g: 0 };
+        if (bits & bit) raised.push(dot);
+      }
+    }
+  }
+}
+
+function resizeCanvas() {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const W = DOT_W * PITCH + PAD * 2;
+  const H = DOT_H * PITCH + PAD * 2;
+  canvas.width = Math.round(W * dpr);
+  canvas.height = Math.round(H * dpr);
+  canvas.style.aspectRatio = W + " / " + H;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+
+/* ── precomputed tables — zero string building per frame ── */
+let dimColor = [], glowSprite = null;
+function lerp3raw(t, a, b, c) {
+  t = Math.max(0, Math.min(1.15, t));
+  let u, v0, v1;
+  if (t <= 0.55) { u = t / 0.55; v0 = a; v1 = b; } else { u = (t - 0.55) / 0.6; v0 = b; v1 = c; }
+  return "rgb(" + Math.round(v0[0] + (v1[0] - v0[0]) * u) + "," + Math.round(v0[1] + (v1[1] - v0[1]) * u) + "," + Math.round(v0[2] + (v1[2] - v0[2]) * u) + ")";
+}
+function buildTables(pal) {
+  dimColor = [];
+  for (let i = 0; i < LEVELS; i++) {
+    dimColor.push(lerp3raw((i / (LEVELS - 1)) * 1.15, pal.dim, pal.lit, pal.hot));
+  }
+  glowSprite = document.createElement("canvas");
+  glowSprite.width = glowSprite.height = 64;
+  const g = glowSprite.getContext("2d");
+  const grad = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+  grad.addColorStop(0, rgba(pal.hot, 1));
+  grad.addColorStop(0.28, rgba(pal.lit, 0.55));
+  grad.addColorStop(0.62, rgba(pal.alt, 0.3));
+  grad.addColorStop(1, rgba(pal.alt, 0));
+  g.fillStyle = grad;
+  g.fillRect(0, 0, 64, 64);
+}
+const dimBuckets  = Array.from({ length: LEVELS }, () => []);
+const glowJobs = [];
+
+/* ═══ PER-THEME DOT GEOMETRY ═════════════════════════════════════════ */
+function drawDotShape(shape, x, y, s) {
+  const h = s * 0.5, r = s * 0.55;
+  switch (shape) {
+    case "circle":
+      ctx.beginPath(); ctx.arc(x, y, r, 0, 6.2832); ctx.fill(); break;
+    case "ring":
+      ctx.beginPath(); ctx.arc(x, y, r, 0, 6.2832); ctx.lineWidth = Math.max(1.1, s * 0.3); ctx.stroke(); break;
+    case "diamond":
+      ctx.beginPath(); ctx.moveTo(x, y - r); ctx.lineTo(x + r, y); ctx.lineTo(x, y + r); ctx.lineTo(x - r, y); ctx.closePath(); ctx.fill(); break;
+    case "plus": {
+      const t = s * 0.34;
+      ctx.fillRect(x - h, y - t / 2, s, t);
+      ctx.fillRect(x - t / 2, y - h, t, s);
+      break;
+    }
+    default: // square
+      ctx.fillRect(x - h, y - h, s, s);
+  }
+}
+
+/* ═══ AMBIENT FX PARTICLES (transparent, no background) ══════════════ */
+let lastParticleT = 0;
+const KATAKANA = "アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン0123456789ABCDEF";
+let particles = [];
+function newParticle(fx, W, H, scatter) {
+  const R = Math.random;
+  switch (fx) {
+    case "snow":     return { x: R() * W, y: scatter ? R() * H : -10 - R() * 40, vy: 26 + R() * 46, vx: (R() - 0.5) * 16, r: 1.1 + R() * 2.1, ph: R() * 6.28 };
+    case "embers":   return { x: R() * W, y: scatter ? R() * H : H + 6 + R() * 30, vy: -(34 + R() * 76), vx: (R() - 0.5) * 18, r: 0.8 + R() * 1.8, ph: R() * 6.28 };
+    case "rain":     return { x: R() * (W + 240) - 120, y: scatter ? R() * H : -20 - R() * H * 0.4, vy: 480 + R() * 260, vx: -50, len: 9 + R() * 14, o: 0.16 + R() * 0.3 };
+    case "katakana": return { x: R() * W, y: scatter ? R() * H : -20 - R() * H * 0.5, vy: 150 + R() * 200, ch: KATAKANA[(R() * KATAKANA.length) | 0], o: 0.35 + R() * 0.6, sz: 9 + R() * 8 };
+    case "stars":    return { x: R() * W, y: R() * H, r: 0.6 + R() * 1.6, ph: R() * 6.28, sp: 0.7 + R() * 2.4 };
+    case "petals":   return { x: R() * W, y: scatter ? R() * H : -14 - R() * 40, vy: 22 + R() * 32, ph: R() * 6.28, r: 1.9 + R() * 2.3, rot: R() * 6.28, vr: (R() - 0.5) * 2.2 };
+    case "motes":    return { x: R() * W, y: R() * H, vy: (R() - 0.5) * 11, vx: (R() - 0.5) * 11, r: 0.7 + R() * 1.6, ph: R() * 6.28 };
+    case "sparks":   return { x: R() * W, y: H * (0.55 + R() * 0.45), vy: -(80 + R() * 150), vx: (R() - 0.5) * 40, r: 0.7 + R() * 1.6, ph: R() * 6.28, age: R() * 0.9, life: 0.9 + R() * 0.8 };
+    default: return null;
+  }
+}
+function drawParticles(pal, t, dt, W, H) {
+  const fx = TC[themeIdx].fx;
+  if (fx === "none") { particles.length = 0; return; }
+  while (particles.length < 56) {
+    const p = newParticle(fx, W, H, true);
+    if (!p) return;
+    particles.push(p);
+  }
+  const glowFX = fx === "embers" || fx === "sparks";
+  if (glowFX) ctx.globalCompositeOperation = "lighter";
+  for (let i = 0; i < particles.length; i++) {
+    const p = particles[i];
+    switch (fx) {
+      case "snow":
+        p.y += p.vy * dt; p.x += (p.vx + Math.sin(t * 1.4 + p.ph) * 9) * dt;
+        ctx.fillStyle = rgba(pal.hot, 0.85);
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 6.2832); ctx.fill();
+        if (p.y > H + 6) particles[i] = newParticle(fx, W, H, false);
+        break;
+      case "embers": {
+        p.y += p.vy * dt; p.x += (p.vx + Math.sin(t * 2.1 + p.ph) * 14) * dt;
+        const a = 0.45 + 0.45 * Math.sin(t * 8 + p.ph);
+        ctx.fillStyle = rgba(pal.lit, Math.max(0.12, a));
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.r * (1 + 0.3 * Math.sin(t * 6 + p.ph)), 0, 6.2832); ctx.fill();
+        if (p.y < -8) particles[i] = newParticle(fx, W, H, false);
+        break;
+      }
+      case "rain":
+        p.y += p.vy * dt; p.x += p.vx * dt;
+        ctx.strokeStyle = rgba(pal.lit, p.o); ctx.lineWidth = 1.3;
+        ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x - p.vx * 0.024, p.y - p.len); ctx.stroke();
+        if (p.y > H + 16) particles[i] = newParticle(fx, W, H, false);
+        break;
+      case "katakana":
+        p.y += p.vy * dt;
+        ctx.font = p.sz + "px ui-monospace, Consolas, monospace";
+        ctx.fillStyle = rgba(pal.lit, p.o);
+        ctx.fillText(p.ch, p.x, p.y);
+        if (p.y > H + 14) particles[i] = newParticle(fx, W, H, false);
+        break;
+      case "stars": {
+        const tw = Math.pow((Math.sin(t * p.sp + p.ph) + 1) / 2, 2);
+        ctx.fillStyle = rgba(pal.hot, 0.12 + 0.78 * tw);
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 6.2832); ctx.fill();
+        break;
+      }
+      case "petals":
+        p.y += p.vy * dt; p.x += Math.sin(t * 1.7 + p.ph) * 22 * dt; p.rot += p.vr * dt;
+        ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot);
+        ctx.fillStyle = rgba(pal.lit, 0.8);
+        ctx.beginPath(); ctx.ellipse(0, 0, p.r * 1.7, p.r * 0.85, 0, 0, 6.2832); ctx.fill();
+        ctx.restore();
+        if (p.y > H + 8) particles[i] = newParticle(fx, W, H, false);
+        break;
+      case "motes":
+        p.y += p.vy * dt; p.x += p.vx * dt;
+        ctx.fillStyle = rgba(pal.alt, 0.22 + 0.18 * (Math.sin(t * 1.5 + p.ph) * 0.5 + 0.5));
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 6.2832); ctx.fill();
+        if (p.x < -6) p.x = W + 5; if (p.x > W + 6) p.x = -5;
+        if (p.y < -6) p.y = H + 5; if (p.y > H + 6) p.y = -5;
+        break;
+      case "sparks":
+        p.age += dt; p.y += p.vy * dt; p.x += p.vx * dt; p.vy += 150 * dt;
+        { const a = Math.max(0, 1 - p.age / p.life);
+          ctx.fillStyle = rgba(pal.alt, a);
+          ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 6.2832); ctx.fill(); }
+        if (p.age >= p.life || p.y > H + 10) particles[i] = newParticle(fx, W, H, false);
+        break;
+    }
+  }
+  if (glowFX) ctx.globalCompositeOperation = "source-over";
+}
+
+/* hidden debug hook: open page with #freeze=SECONDS to inspect a frozen frame */
+const freezeMatch = location.hash.match(/freeze=([\d.]+)/);
+const freezeAt = freezeMatch ? Math.max(0.31, parseFloat(freezeMatch[1])) : null;
+
+function drawFrame(t) {
+  const W = DOT_W * PITCH + PAD * 2;
+  const H = DOT_H * PITCH + PAD * 2;
+
+  // palette: smoothstep crossfade toward the active theme (rebuilt only while fading)
+  const pal = currentColors(t);
+  const fading = fadeFrom !== null && (t - fadeStart) < THEME_FADE;
+  if (fading || tablesDirty) { buildTables(pal); tablesDirty = fading; }
+
+  ctx.clearRect(0, 0, W, H);
+
+  const shape = TC[themeIdx].shape;
+  const glowMul = TC[themeIdx].glow;
+  const pdt = Math.max(0, Math.min(0.05, t - lastParticleT));
+  lastParticleT = t;
+  drawParticles(pal, t, pdt, W, H);
+
+  // active pulses
+  const live = pulses.filter(p => (t - p.t0) > 0);
+  const nl = live.length;
+  for (const b of dimBuckets) b.length = 0;
+  glowJobs.length = 0;
+
+  // pass 1 — raised dots (batched by intensity bucket)
+  for (const d of raised) {
+    let inten = 0.20 + 0.05 * Math.sin(t * 0.9 + d.y * 0.018 + d.x * 0.004), disp = 0;
+    for (let j = 0; j < nl; j++) {
+      const p = live[j], age = t - p.t0, r = p.speed * age, x = (d.dist - r) / p.sigma;
+      const amp = p.amp * Math.exp(-0.5 * x * x) * Math.exp(-d.dist * 0.0006) * Math.exp(-r * 0.0007);
+      inten += amp; disp += amp * 3.4;
+    }
+    if (inten >= BRIGHT_T) { d._g = Math.min(1, (inten - BRIGHT_T) / 0.75); d._p = disp; glowJobs.push(d); continue; }
+    d._p = 0;
+    dimBuckets[Math.min(LEVELS - 1, (inten / 1.15 * (LEVELS - 1)) | 0)].push(d);
+  }
+  for (let i = 0; i < LEVELS; i++) {
+    const b = dimBuckets[i];
+    if (!b.length) continue;
+    ctx.fillStyle = dimColor[i];
+    ctx.strokeStyle = dimColor[i];
+    const s = (4.2 + i * 0.09) * dotScale;
+    for (const d of b) drawDotShape(shape, d.x, d.y, s);
+  }
+
+  // pass 2 — bright dots: pre-rendered glow sprites, no shadowBlur anywhere
+  ctx.globalCompositeOperation = "lighter";
+  for (const d of glowJobs) {
+    const g = d._g, size = (15 + 27 * g) * dotScale * glowMul;
+    ctx.globalAlpha = 0.45 + 0.55 * g;
+    ctx.drawImage(glowSprite, d.x + d.ux * d._p - size / 2, d.y + d.uy * d._p - size / 2, size, size);
+  }
+  ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = "source-over";
+
+  // ground-zero detonation bloom (a flash, not a line)
+  for (const p of live) {
+    const age = t - p.t0;
+    if (age >= 0.85) continue;
+    const fa = Math.pow(1 - age / 0.85, 2) * 0.85;
+    const fr = 26 + age * 300;
+    const flash = ctx.createRadialGradient(W/2, H/2, 0, W/2, H/2, fr);
+    flash.addColorStop(0, rgba(pal.hot, fa.toFixed(3)));
+    flash.addColorStop(0.35, rgba(pal.lit, (fa * 0.65).toFixed(3)));
+    flash.addColorStop(1, rgba(pal.lit, 0));
+    ctx.fillStyle = flash;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  // alt-accent wirefront — a thin colored shockwave ring riding each pulse
+  ctx.globalCompositeOperation = "lighter";
+  for (const p of live) {
+    const front = p.speed * (t - p.t0);
+    const fade = Math.max(0, 1 - front / (maxR + 60));
+    if (fade <= 0.02) continue;
+    ctx.globalAlpha = fade * 0.6;
+    ctx.strokeStyle = rgba(pal.alt, 1);
+    ctx.lineWidth = 2.2;
+    ctx.beginPath(); ctx.arc(W / 2, H / 2, front, 0, 6.2832); ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = "source-over";
+}
+
+
+function spawnPulse() {
+  pulses.push({ t0: animTime, speed: 235, sigma: 62, amp: 1.3 });
+  applyTheme(nextTheme);          // every wave = the next theme (loops 1→35→1)
+  nextTheme = (nextTheme + 1) % TC.length;
+}
+
+function tick(now) {
+  if (!lastFrame) lastFrame = now;
+  const dt = Math.min(0.05, (now - lastFrame) / 1000);
+  lastFrame = now;
+
+  if (!paused) {
+    animTime += dt;
+    if (animTime >= nextAuto) {
+      spawnPulse();
+      nextAuto = animTime + AUTO_INTERVAL;
+    }
+    // cull dead pulses
+    pulses = pulses.filter(p => (animTime - p.t0) * p.speed < maxR + 220);
+  }
+  drawFrame(animTime);
+  requestAnimationFrame(tick);
+}
+
+function init() {
+  resizeCanvas();
+  buildDots();
+  buildTables(currentColors(0));
+  tablesDirty = false;
+  if (freezeAt !== null) {
+    paused = true;
+    animTime = freezeAt;
+    pulses.push({ t0: 0.3, speed: 235, sigma: 62, amp: 1.3 });
+    requestAnimationFrame(tick);
+    return;
+  }
+  spawnPulse(); // immediate first blast on load — animation is the point
+  requestAnimationFrame(tick);
+}
+
+canvas.addEventListener('pointerdown', spawnPulse);
+
+window.addEventListener("resize", () => { resizeCanvas(); drawFrame(animTime); });
+
+init();
+})();
+</script>
+          <figcaption><span>creator — mission control</span><span>wordmark — live braille dot-matrix, 35 themes on an endless loop</span></figcaption>
         </figure>
       </div>
     </div>
