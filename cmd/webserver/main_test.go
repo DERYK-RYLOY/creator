@@ -34,7 +34,7 @@ func TestIndexServesLandingPage(t *testing.T) {
 func TestAssetsServePNG(t *testing.T) {
 	srv := httptest.NewServer(newHandler())
 	defer srv.Close()
-	for _, name := range []string{"creator-scifi.png", "creator-gear.png", "favicon-32.png"} {
+	for _, name := range []string{"creator-scifi.png", "creator-gear.png", "favicon-32.png", "creator-banner.png"} {
 		resp, err := http.Get(srv.URL + "/assets/" + name)
 		if err != nil {
 			t.Fatal(err)
@@ -57,7 +57,7 @@ func TestAssetsServePNG(t *testing.T) {
 func TestAssetsServeGIF(t *testing.T) {
 	srv := httptest.NewServer(newHandler())
 	defer srv.Close()
-	for _, name := range []string{"creator-banner-ascii.gif", "creator-gear-ascii.gif", "creator-logo-ascii.gif"} {
+	for _, name := range []string{"creator-banner.gif", "creator-gear-ascii.gif", "creator-logo-ascii.gif"} {
 		resp, err := http.Get(srv.URL + "/assets/" + name)
 		if err != nil {
 			t.Fatal(err)

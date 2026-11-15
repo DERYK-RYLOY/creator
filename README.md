@@ -2,9 +2,8 @@
 
 <p align="center">
   <picture>
-    <source media="(prefers-reduced-motion: reduce) and (prefers-color-scheme: light)" srcset="docs/assets/creator-scifi-light.png">
-    <source media="(prefers-reduced-motion: reduce)" srcset="docs/assets/creator-banner-ascii.png">
-    <img src="docs/assets/creator-banner-ascii.gif" alt="Creator — the word CREATOR rendered as Unicode braille, running the same wave engine as the mission-control wordmark: energy fronts roll through the letters, a tide breathes outward from the core and a comet white-heats everything it crosses" width="760">
+    <source media="(prefers-reduced-motion: reduce)" srcset="docs/assets/creator-banner.png">
+    <img src="docs/assets/creator-banner.gif" alt="Creator — the word CREATOR rendered as Unicode braille dots, nuclear shockwave pulses rolling outward through the letters while the palette crossfades through 35 real themes (Nord, Dracula, Gruvbox, Tokyo Night, Catppuccin, Rosé Pine, Synthwave 84, The Matrix...) on an endless loop" width="760">
   </picture>
 </p>
 
