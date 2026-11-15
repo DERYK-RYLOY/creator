@@ -54,6 +54,29 @@ func TestAssetsServePNG(t *testing.T) {
 	}
 }
 
+func TestAssetsServeGIF(t *testing.T) {
+	srv := httptest.NewServer(newHandler())
+	defer srv.Close()
+	for _, name := range []string{"creator-banner-ascii.gif", "creator-gear-ascii.gif", "creator-logo-ascii.gif"} {
+		resp, err := http.Get(srv.URL + "/assets/" + name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		ct := resp.Header.Get("Content-Type")
+		size, _ := io.Copy(io.Discard, resp.Body)
+		resp.Body.Close()
+		if resp.StatusCode != http.StatusOK {
+			t.Fatalf("%s: status = %d", name, resp.StatusCode)
+		}
+		if ct != "image/gif" {
+			t.Fatalf("%s: content-type = %q", name, ct)
+		}
+		if size < 1024 {
+			t.Fatalf("%s: suspicious size %d", name, size)
+		}
+	}
+}
+
 func TestTraversalAndUnknownPathsAre404(t *testing.T) {
 	srv := httptest.NewServer(newHandler())
 	defer srv.Close()

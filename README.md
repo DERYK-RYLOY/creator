@@ -2,9 +2,9 @@
 
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/creator-scifi.png">
-    <source media="(prefers-color-scheme: light)" srcset="docs/assets/creator-scifi-light.png">
-    <img src="docs/assets/creator-scifi.png" alt="Creator — the word CREATOR drawn as a white wireframe sci-fi mark" width="720">
+    <source media="(prefers-reduced-motion: reduce) and (prefers-color-scheme: light)" srcset="docs/assets/creator-scifi-light.png">
+    <source media="(prefers-reduced-motion: reduce)" srcset="docs/assets/creator-banner-ascii.png">
+    <img src="docs/assets/creator-banner-ascii.gif" alt="Creator — the word CREATOR reborn as an animated ASCII braille dot field: an energy beam ignites the mark, strokes twinkle, and the whole mark breathes" width="760">
   </picture>
 </p>
 
@@ -162,7 +162,10 @@ targets unless `CREATOR_ALLOW_PRIVATE_NET=1`, which you should set only for
 trusted internal networks.
 
 <p align="center">
-  <img src="docs/assets/creator-gear.png" alt="Creator — the gear-and-circuit wordmark" width="640">
+  <picture>
+    <source media="(prefers-reduced-motion: reduce)" srcset="docs/assets/creator-gear-ascii.png">
+    <img src="docs/assets/creator-gear-ascii.gif" alt="Creator — the word CREATOR built from teal-outlined mechanical gear letters, reborn as an animated ASCII braille dot field; a scan beam sweeps the neon teeth" width="640">
+  </picture>
 </p>
 
 ## Mission control
@@ -209,6 +212,15 @@ Slash commands worth knowing (all 35 live in the F1 palette): `/search` finds te
 The screen is a near-black, professional conversation surface. A one-line header carries the Creator wordmark on the left and the git branch plus provider/model on the right; the body splits into the transcript and an optional right sidebar (session state, model, workspace, active lens, key map - auto-shown at 120+ columns, toggled with CTRL+B). User turns render with an accent spine; assistant replies are plain text; tool work renders as bordered boxes whose hairline warms to amber while running and cools to quiet on completion. The composer is a bordered input box that warms to the accent color while the agent works. The status bar underneath carries the permission-mode chip and, when a lens is active, the lens chip (hits/hidden) on the left, and live run telemetry on the right - elapsed time, current tool, token and tool counters.
 
 **The CREATOR wordmark animation.** The signature wordmark is a volumetric dot field baked into the binary and rendered as Unicode braille patterns - no assets, no goroutines, pure functions of a tick-driven clock. The master cutout is downscaled to the terminal lattice and every dot carries a pseudo-depth plane, so energy fronts sweep *through* the volume rather than over a decal. The motion model: layered-sine depth parallax, a smooth-vector idle drift with an outward-breathing tide, pow-sharpened caustic light filaments, heartbeat energy fronts with spring displacement and a tangential swirl, an alternating comet glare that white-heats the dots it crosses, exponential sparkle flares and rising bubbles with fading wakes. The palette rides the active theme (muted to thinking to foreground to accent, with a molten near-white tip), ping-ponged through a gamma curve so crests detonate instead of washing out. An idle empty session shows the full-size hero wordmark above the composer; once the transcript fills, the hero condenses to the animated corner widget in the status bar right edge.
+
+<p align="center">
+  <picture>
+    <source media="(prefers-reduced-motion: reduce)" srcset="docs/assets/creator-logo-ascii.png">
+    <img src="docs/assets/creator-logo-ascii.gif" alt="The gear C rendered as an animated ASCII braille dot field — a comet arc orbits the ring on a heartbeat, motes orbit the aperture" width="240">
+  </picture>
+  <br>
+  <sub>The gear C — the same dot-field engine, one revolution per breath.</sub>
+</p>
 
 ## How it works
 
@@ -405,6 +417,7 @@ Go 1.27+, no CGO. The suite is plain `go test`.
 - Clone, then `go build ./...`, `go vet ./...`, `gofmt -l .`, `go test ./...`.
 - `bin/` is gitignored. Rebuild the binary with:
   `go build -trimpath -ldflags "-s -w" -o bin/creator.exe ./cmd/creator`
+- The animated ASCII/braille art in this README and the landing page (`docs/assets/creator-*-ascii.gif` + `-ascii.png` stills for `prefers-reduced-motion`) is generated from the source PNGs by `python tools/ascii-art.py` (Pillow). It is deterministic — re-run it after the source art changes; it rewrites the GIFs and stills in both `docs/assets/` and `cmd/webserver/assets/` (the landing page binary embeds them).
 - The landing page lives in `cmd/webserver` and is embedded into the binary.
   Preview it with `go run ./cmd/webserver` (http://127.0.0.1:8080, override with `CREATOR_WEB_ADDR`).
 - `.creator/` is gitignored on purpose: it holds runtime state (sessions,

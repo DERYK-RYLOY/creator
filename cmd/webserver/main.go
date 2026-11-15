@@ -37,6 +37,8 @@ func contentType(name string) string {
 	switch strings.ToLower(path.Ext(name)) {
 	case ".png":
 		return "image/png"
+	case ".gif":
+		return "image/gif"
 	case ".svg":
 		return "image/svg+xml"
 	case ".ico":
