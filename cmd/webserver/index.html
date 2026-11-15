@@ -7,17 +7,9 @@
 <meta name="description" content="Creator is an autonomous, terminal-first IDE and agent. Large outputs become small digests with handles — your context never drowns. Delegation, verification-gated tasks, 35 highlight lenses, 35 themes, MCP-native.">
 <meta name="theme-color" content="#0a0a0c">
 <meta name="color-scheme" content="dark">
-<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
-<link rel="icon" type="image/png" sizes="64x64" href="assets/favicon-64.png">
-<link rel="apple-touch-icon" sizes="180x180" href="assets/favicon-180.png">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Creator — The Terminal Agent That Never Floods Its Context">
 <meta property="og:description" content="An autonomous, terminal-first IDE and agent. Digests and handles instead of raw floods — your context stays sharp.">
-<meta property="og:image" content="assets/social-preview.png">
-<meta property="og:image:width" content="1280">
-<meta property="og:image:height" content="640">
-<meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="assets/social-preview.png">
 <style>
 /* ============ Design tokens ============ */
 :root{
@@ -103,7 +95,7 @@ main,footer,nav{position:relative;z-index:1}
   color:var(--teal);font-family:var(--mono);font-size:15px;
   box-shadow:0 0 18px rgba(45,212,191,.25), inset 0 0 12px rgba(45,212,191,.15);
 }
-.brand-icon{width:34px;height:34px;border-radius:9px;border:1px solid rgba(45,212,191,.4);background:#000}
+
 .brand-name{font-weight:800;font-size:1.12rem;letter-spacing:-.02em}
 .brand-tag{font-family:var(--mono);font-size:.6rem;color:var(--teal);border:1px solid rgba(45,212,191,.35);border-radius:999px;padding:.1rem .45rem;letter-spacing:.12em}
 .nav-links{display:flex;gap:1.6rem;list-style:none;font-size:.88rem}
@@ -276,17 +268,6 @@ h2{font-size:clamp(1.7rem,3.2vw,2.5rem);letter-spacing:-.02em;line-height:1.15}
 }
 .why-col pre .g{color:#34d399}.why-col pre .y{color:#f4c069}.why-col pre .b{color:#8ee6ff}
 
-/* ============ Blueprint figure ============ */
-.blueprint{
-  margin-top:2rem;border:1px solid var(--line-strong);border-radius:12px;overflow:hidden;
-  background:#0d0d10;box-shadow:var(--shadow)
-}
-.blueprint img{width:100%;height:auto;display:block}
-.blueprint figcaption{
-  font-family:var(--mono);font-size:.62rem;letter-spacing:.22em;color:var(--text-faint);
-  padding:.75rem 1rem;border-top:1px solid var(--line);text-align:center;text-transform:uppercase;
-}
-
 /* ============ Final CTA ============ */
 .final{max-width:1200px;margin:0 auto;padding:0 1.5rem 6rem;text-align:center}
 .final-inner{
@@ -338,10 +319,6 @@ footer{border-top:1px solid var(--line);background:rgba(10,10,12,.85)}
 <nav class="nav" id="top" aria-label="Primary">
   <div class="nav-inner">
     <a class="brand" href="#top">
-      <picture>
-        <source media="(prefers-reduced-motion: reduce)" srcset="assets/creator-logo-ascii.png">
-        <img class="brand-icon" src="assets/creator-logo-ascii.gif" alt="" width="34" height="34">
-      </picture>
       <span class="brand-name">creator</span>
       <span class="brand-tag">v0.1.0</span>
     </a>
@@ -406,7 +383,7 @@ footer{border-top:1px solid var(--line);background:rgba(10,10,12,.85)}
             <div class="hud-swatches" id="themeSwatches"></div>
           </div>
           <div class="theme-rail" id="themeRail" aria-hidden="true"></div>
-          <noscript><img src="assets/creator-banner.svg" alt="Creator — the word CREATOR rendered as braille dots on an endless morph of 35 real themes (SMIL animation, no scripts)" width="1816" height="344"></noscript>
+          <noscript><img src="assets/creator-banner.webp" alt="Creator — the word CREATOR rendered as braille dots on an endless morph of 35 real themes (animated WebP capture of the live canvas, no scripts)" width="1816" height="344"></noscript>
         </div>
 <script>
 (() => {
@@ -949,10 +926,7 @@ init();
     </div>
     <div class="mc">
       <div class="mc-visual reveal" data-delay="1">
-        <picture>
-          <source media="(prefers-reduced-motion: reduce)" srcset="assets/creator-gear-ascii.png">
-          <img src="assets/creator-gear-ascii.gif" alt="Creator — the word CREATOR built from teal-outlined mechanical gear letters, reborn as an animated ASCII braille dot field; a scan beam sweeps the neon teeth" width="1058" height="258" loading="lazy" decoding="async">
-        </picture>
+        <img src="assets/creator-banner.webp" alt="Creator — the word CREATOR rendered as braille dots. A shockwave pulse radiates through the letters while the palette continuously morphs through 35 real themes" width="1058" height="201" loading="lazy" decoding="async" style="width:100%;height:auto">
       </div>
       <div class="mc-list">
         <div class="mc-item reveal" data-delay="1"><b>35</b><span>built-in themes — from Volcanic Ember to Imperial Jade to a readable day theme, with a live preview overlay and config persistence.</span></div>
@@ -1001,10 +975,6 @@ FAIL github.com/acme/app [build failed]
  pattern="cannot use")]</pre>
         </div>
       </div>
-      <figure class="blueprint reveal" data-delay="2">
-        <img src="assets/blueprint-coreloop.jpg" alt="Creator core loop — an engineering blueprint of the whole agent: PROMPT, PROVIDER CALL, TOOL CALLS, OBSERVATIONS around the C-shaped gear engine" width="1600" height="879" loading="lazy" decoding="async">
-        <figcaption>CREATOR — CORE LOOP — EXPLODED VIEW · THE WHOLE SYSTEM ON ONE SHEET</figcaption>
-      </figure>
     </div>
   </section>
 
@@ -1024,10 +994,6 @@ FAIL github.com/acme/app [build failed]
 <footer>
   <div class="foot-inner">
     <div class="foot-brand">
-      <picture>
-        <source media="(prefers-reduced-motion: reduce)" srcset="assets/creator-logo-ascii.png">
-        <img class="brand-icon" style="width:26px;height:26px;border-radius:7px" src="assets/creator-logo-ascii.gif" alt="" width="26" height="26">
-      </picture>
       <span><b>creator</b> · MIT · © 2026</span>
     </div>
     <ul class="foot-links">

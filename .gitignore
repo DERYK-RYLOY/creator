@@ -35,3 +35,7 @@ secrets.json
 Thumbs.db
 .vscode/
 .idea/
+
+# Banner capture scratch (tools/render-banner.mjs)
+banner-frames/
+

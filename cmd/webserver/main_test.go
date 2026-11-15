@@ -31,10 +31,10 @@ func TestIndexServesLandingPage(t *testing.T) {
 	}
 }
 
-func TestAssetsServePNG(t *testing.T) {
+func TestAssetsServeWebP(t *testing.T) {
 	srv := httptest.NewServer(newHandler())
 	defer srv.Close()
-	for _, name := range []string{"creator-scifi.png", "creator-gear.png", "favicon-32.png"} {
+	for _, name := range []string{"creator-banner.webp"} {
 		resp, err := http.Get(srv.URL + "/assets/" + name)
 		if err != nil {
 			t.Fatal(err)
@@ -45,7 +45,7 @@ func TestAssetsServePNG(t *testing.T) {
 		if resp.StatusCode != http.StatusOK {
 			t.Fatalf("%s: status = %d", name, resp.StatusCode)
 		}
-		if ct != "image/png" {
+		if ct != "image/webp" {
 			t.Fatalf("%s: content-type = %q", name, ct)
 		}
 		if size < 1024 {
@@ -54,10 +54,10 @@ func TestAssetsServePNG(t *testing.T) {
 	}
 }
 
-func TestAssetsServeGIF(t *testing.T) {
+func TestAssetsServeHTML(t *testing.T) {
 	srv := httptest.NewServer(newHandler())
 	defer srv.Close()
-	for _, name := range []string{"creator-gear-ascii.gif", "creator-logo-ascii.gif"} {
+	for _, name := range []string{"creator-animation.html"} {
 		resp, err := http.Get(srv.URL + "/assets/" + name)
 		if err != nil {
 			t.Fatal(err)
@@ -68,30 +68,7 @@ func TestAssetsServeGIF(t *testing.T) {
 		if resp.StatusCode != http.StatusOK {
 			t.Fatalf("%s: status = %d", name, resp.StatusCode)
 		}
-		if ct != "image/gif" {
-			t.Fatalf("%s: content-type = %q", name, ct)
-		}
-		if size < 1024 {
-			t.Fatalf("%s: suspicious size %d", name, size)
-		}
-	}
-}
-
-func TestAssetsServeSVG(t *testing.T) {
-	srv := httptest.NewServer(newHandler())
-	defer srv.Close()
-	for _, name := range []string{"creator-banner.svg"} {
-		resp, err := http.Get(srv.URL + "/assets/" + name)
-		if err != nil {
-			t.Fatal(err)
-		}
-		ct := resp.Header.Get("Content-Type")
-		size, _ := io.Copy(io.Discard, resp.Body)
-		resp.Body.Close()
-		if resp.StatusCode != http.StatusOK {
-			t.Fatalf("%s: status = %d", name, resp.StatusCode)
-		}
-		if ct != "image/svg+xml" {
+		if ct != "text/html; charset=utf-8" {
 			t.Fatalf("%s: content-type = %q", name, ct)
 		}
 		if size < 1024 {
