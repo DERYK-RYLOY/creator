@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <a href="http://127.0.0.1:8080/assets/creator-animation.html">▶ the same animation, live and full-screen</a> · <code>go run ./cmd/webserver</code>
+  <a href="https://deryk-ryloy.github.io/creator/"><b>▶ WATCH THE ANIMATION LIVE</b></a> · <code>go run ./cmd/webserver</code>
 </p>
 
 <p align="center">
