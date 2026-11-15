@@ -1,7 +1,7 @@
 # Creator
 
 <p align="center">
-  <img src="docs/assets/creator-banner.gif" alt="Creator — the word CREATOR rendered as Unicode braille dots, nuclear shockwave pulses rolling outward through the letters while the palette crossfades through 35 real themes (Nord, Dracula, Gruvbox, Tokyo Night, Catppuccin, Rosé Pine, Synthwave 84, The Matrix...) on an endless loop" width="760">
+  <img src="docs/assets/creator-banner.svg" alt="Creator — the word CREATOR rendered as braille dots. A shockwave pulse radiates through the letters while the palette continuously morphs through 35 real themes (Nord, Dracula, Gruvbox, Tokyo Night, Catppuccin, Rosé Pine, Synthwave 84, The Matrix...) — a self-contained SMIL-animated SVG, no scripts" width="760">
 </p>
 
 <p align="center">
